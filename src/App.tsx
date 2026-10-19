@@ -1,37 +1,31 @@
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { avatarsList, classicPunishmentsList } from './data'
-import { drawCard, type DrawnCard, type Mode } from './game'
+import { avatarsList } from './data'
+import type { Mode } from './game'
 import { GameScreen, PunishmentOverlay } from './components/GameScreen'
-import { CheckoutModal, HostModal, JoinModal, RecapModal, StoreModal, type Player, type ProofPhoto } from './components/Modals'
+import { CheckoutModal, HostModal, JoinModal, RecapModal, RoomLobbyModal, StoreModal, type Player, type ProofPhoto } from './components/Modals'
 import { ProofCameraModal } from './components/ProofCamera'
 import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
+import { getPlayerId, roomFromUrl, useDeadline, useRoom } from './net'
 
 type Screen = 'title' | 'lobby' | 'game'
-type ModalName = 'store' | 'checkout' | 'host' | 'join' | 'proof' | 'recap' | null
-
-const CARD_SECONDS = 60
+type ModalName = 'store' | 'checkout' | 'host' | 'join' | 'room' | 'proof' | 'recap' | null
 
 export default function App() {
   const [loading, setLoading] = useState(true)
-  const [screen, setScreen] = useState<Screen>('title')
-  const [modal, setModal] = useState<ModalName>(null)
+  const [inviteCode] = useState(() => roomFromUrl())
+  const [meId] = useState(() => getPlayerId())
+  // Arriving through a party link skips the title and opens Join with the code filled in.
+  const [screen, setScreen] = useState<Screen>(() => (inviteCode ? 'lobby' : 'title'))
+  const [modal, setModal] = useState<ModalName>(() => (inviteCode ? 'join' : null))
   const [checkoutFrom, setCheckoutFrom] = useState<ModalName>(null)
   const [mode, setMode] = useState<Mode>('classic')
   const [unlocked, setUnlocked] = useState(false)
   const [user, setUser] = useState<Player>({ name: 'Player', avatar: avatarsList[0] })
-  const [card, setCard] = useState<DrawnCard | null>(null)
-  const [timeLeft, setTimeLeft] = useState(CARD_SECONDS)
-  const [punishment, setPunishment] = useState<string | null>(null)
   const [photos, setPhotos] = useState<ProofPhoto[]>([])
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setLoading(false), 1800)
-    return () => window.clearTimeout(t)
-  }, [])
 
   const toast = useCallback((text: string) => {
     window.clearTimeout(toastTimer.current)
@@ -39,31 +33,35 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToastMsg(null), 2500)
   }, [])
 
-  const tapOut = useCallback(() => {
-    setPunishment(classicPunishmentsList[Math.floor(Math.random() * classicPunishmentsList.length)])
+  const room = useRoom(
+    (reason) => {
+      toast(reason)
+      setModal(null)
+      setScreen('lobby')
+    },
+    // The server owns the game phase; mirror it into the screen as updates arrive.
+    (st) => {
+      if (st.phase === 'game') {
+        setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
+        setScreen('game')
+      } else {
+        setScreen('lobby')
+        setModal('room')
+      }
+    },
+  )
+  const { state } = room
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setLoading(false), 1800)
+    return () => window.clearTimeout(t)
   }, [])
 
-  // Timer pauses while the punishment overlay is up, like the original.
-  useEffect(() => {
-    if (screen !== 'game' || !card || punishment || timeLeft <= 0) return
-    const t = window.setTimeout(() => {
-      setTimeLeft(timeLeft - 1)
-      if (timeLeft - 1 <= 0) tapOut()
-    }, 1000)
-    return () => window.clearTimeout(t)
-  }, [screen, card, punishment, timeLeft, tapOut])
-
-  const advance = () => {
-    setCard(drawCard(mode))
-    setTimeLeft(CARD_SECONDS)
-  }
-
-  const startGame = () => {
-    setModal(null)
-    setCard(drawCard(mode, true))
-    setTimeLeft(CARD_SECONDS)
-    setScreen('game')
-  }
+  const timeLeft = useDeadline(state?.deadline ?? null, !!state?.punishment)
+  const isMyTurn = !!state && state.turnId === meId
+  const turnPlayer = state?.players.find((p) => p.id === state.turnId)
+  const punished = state?.punishment ? state.players.find((p) => p.id === state.punishment?.playerId) : undefined
+  const isHost = !!state && state.hostId === meId
 
   const confirmPurchase = () => {
     setUnlocked(true)
@@ -73,10 +71,24 @@ export default function App() {
     setScreen('lobby')
   }
 
-  const goHome = () => {
-    if (!confirm('End current party session and return to Home Screen?')) return
+  const leaveGame = () => {
+    if (!confirm('Leave this party and return to the Home Screen?')) return
+    room.leaveRoom()
+    setModal(null)
     setScreen('title')
-    setCard(null)
+  }
+
+  const hostCreate = async (name: string) => {
+    if (name) setUser((u) => ({ ...u, name }))
+    const r = await room.createRoom(name || user.name, user.avatar, mode)
+    if (!r.ok) toast(r.error)
+  }
+
+  const join = async (code: string, name: string) => {
+    if (name) setUser((u) => ({ ...u, name }))
+    const r = await room.joinRoom(code, name || user.name, user.avatar)
+    if (!r.ok) toast(r.error)
+    else if (inviteCode) window.history.replaceState(null, '', window.location.pathname)
   }
 
   return (
@@ -106,25 +118,27 @@ export default function App() {
             onJoin={() => setModal('join')}
           />
         )}
-        {screen === 'game' && card && (
+        {screen === 'game' && state?.card && (
           <GameScreen
             key="game"
-            mode={mode}
-            card={card}
+            mode={state.mode}
+            card={state.card}
             timeLeft={timeLeft}
             user={user}
-            onHome={goHome}
+            isMyTurn={isMyTurn}
+            turnName={turnPlayer?.name ?? 'Someone'}
+            onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
-              advance()
+              room.verdict('complete')
             }}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
             onNext={() => {
               toast('⏭️ Passing to next player!')
-              advance()
+              room.verdict('skip')
             }}
-            onTapOut={tapOut}
+            onTapOut={() => room.verdict('tapout')}
           />
         )}
       </AnimatePresence>
@@ -143,18 +157,27 @@ export default function App() {
         onMode={setMode}
         onLockedBetchu={() => { setCheckoutFrom('host'); setModal('checkout') }}
         onCancel={() => setModal(null)}
-        onStart={startGame}
+        onCreate={hostCreate}
         toast={toast}
       />
       <JoinModal
         open={modal === 'join'}
+        initialCode={inviteCode}
         user={user}
         onAvatar={(avatar) => setUser((u) => ({ ...u, avatar }))}
-        onJoin={(name) => {
-          if (name) setUser((u) => ({ ...u, name }))
-          startGame()
-        }}
+        onJoin={join}
         onCancel={() => setModal(null)}
+        toast={toast}
+      />
+      <RoomLobbyModal
+        open={modal === 'room'}
+        state={state}
+        meId={meId}
+        onStart={room.startGame}
+        onLeave={() => {
+          room.leaveRoom()
+          setModal(null)
+        }}
         toast={toast}
       />
       <ProofCameraModal
@@ -167,11 +190,10 @@ export default function App() {
       />
       <RecapModal open={modal === 'recap'} photos={photos} onClose={() => setModal(null)} />
       <PunishmentOverlay
-        text={punishment}
-        onDone={() => {
-          setPunishment(null)
-          advance()
-        }}
+        text={state?.punishment?.text ?? null}
+        playerName={punished?.name ?? 'Someone'}
+        canDismiss={!!state?.punishment && (state.punishment.playerId === meId || isHost)}
+        onDone={room.punishmentDone}
       />
     </MotionConfig>
   )

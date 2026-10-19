@@ -9,6 +9,8 @@ interface Props {
   card: DrawnCard
   timeLeft: number
   user: Player
+  isMyTurn: boolean
+  turnName: string
   onHome: () => void
   onComplete: () => void
   onSnitch: () => void
@@ -17,7 +19,7 @@ interface Props {
   onTapOut: () => void
 }
 
-export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
   const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
@@ -74,13 +76,14 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
             animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
             exit={{ opacity: 0, x: -80, rotate: -6, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            drag="x"
+            drag={isMyTurn ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.25}
             onDragStart={() => {
               dragged.current = true
             }}
             onDragEnd={(_, info) => {
+              if (!isMyTurn) return
               if (info.offset.x > 110) onComplete()
               else if (info.offset.x < -110) onTapOut()
               setTimeout(() => {
@@ -135,14 +138,21 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
               </motion.div>
             </div>
 
-            <div className="verdict-row">
-              <Pressable className="btn-tapout-big verdict-decline" onClick={onTapOut}>
-                Tap out{isBetchu ? ' (−1 ❤️)' : ''}
-              </Pressable>
-              <Pressable className="btn-complete-dare verdict-accept" onClick={onComplete}>
-                I did it
-              </Pressable>
-            </div>
+            {isMyTurn ? (
+              <div className="verdict-row">
+                <Pressable className="btn-tapout-big verdict-decline" onClick={onTapOut}>
+                  Tap out{isBetchu ? ' (−1 ❤️)' : ''}
+                </Pressable>
+                <Pressable className="btn-complete-dare verdict-accept" onClick={onComplete}>
+                  I did it
+                </Pressable>
+              </div>
+            ) : (
+              <div className="turn-wait">
+                <span className="turn-wait-dot" />
+                {turnName}'s turn
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -153,22 +163,31 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
           <Pressable className="action-chip-btn" onClick={onProof}>
             <span>📸</span> Proof
           </Pressable>
-          <Pressable className="action-chip-btn" onClick={onNext}>
-            <span>⏭️</span> Skip
-          </Pressable>
+          {isMyTurn && (
+            <Pressable className="action-chip-btn" onClick={onNext}>
+              <span>⏭️</span> Skip
+            </Pressable>
+          )}
         </div>
       </div>
     </motion.div>
   )
 }
 
-export function PunishmentOverlay({ text, onDone }: { text: string | null; onDone: () => void }) {
+interface PunishmentProps {
+  text: string | null
+  playerName: string
+  canDismiss: boolean
+  onDone: () => void
+}
+
+export function PunishmentOverlay({ text, playerName, canDismiss, onDone }: PunishmentProps) {
   return (
     <AnimatePresence>
       {text && (
         <motion.div
           className="overlay-screen punishment-overlay"
-          onClick={onDone}
+          onClick={canDismiss ? onDone : undefined}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -184,15 +203,25 @@ export function PunishmentOverlay({ text, onDone }: { text: string | null; onDon
           <motion.div className="punishment-text" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             {text}
           </motion.div>
-          <motion.div
-            className="done-button"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileTap={{ scale: 0.92 }}
-            transition={{ delay: 0.45, type: 'spring', stiffness: 400, damping: 18 }}
-          >
-            Done
+          <motion.div className="punishment-who" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
+            {playerName} tapped out
           </motion.div>
+          {canDismiss ? (
+            <motion.div
+              className="done-button"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ delay: 0.45, type: 'spring', stiffness: 400, damping: 18 }}
+            >
+              Done
+            </motion.div>
+          ) : (
+            <motion.div className="turn-wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
+              <span className="turn-wait-dot" />
+              Waiting for {playerName}
+            </motion.div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
