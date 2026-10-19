@@ -36,7 +36,7 @@ jobs:
       - name: Redeploy on Coolify
         env:
           COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
-          COOLIFY_PHONON_APP_UUID: ${{ vars.COOLIFY_PHONON_APP_UUID }}
+          COOLIFY_PHONON_APP_UUID: ${{ vars.COOLIFY_PHONON_APP_UUID || '3u2gpsarvj1k4xa2rdmtkmuq' }}
         run: |
           if [ -z "$COOLIFY_DEPLOY_TOKEN" ] || [ -z "$COOLIFY_PHONON_APP_UUID" ]; then
             echo "Coolify token/app uuid not set; skipping redeploy (image is pushed)."
