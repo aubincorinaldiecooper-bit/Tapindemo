@@ -15,9 +15,9 @@ export interface ProofPhoto {
   time: string
 }
 
-export function StoreModal({ open, onClose, onUnlock }: { open: boolean; onClose: () => void; onUnlock: () => void }) {
+export function StoreModal({ open, inert, onClose, onUnlock }: { open: boolean; inert?: boolean; onClose: () => void; onUnlock: () => void }) {
   return (
-    <Modal open={open}>
+    <Modal open={open} inert={inert}>
       <div className="flex justify-between items-center mb-3">
         <h2 className="mb-0 text-white">GAME MODES STORE</h2>
         <Pressable onClick={onClose} className="text-gray-400 font-bold text-xl px-2">
@@ -94,6 +94,7 @@ export function CheckoutModal({ open, onCancel, onConfirm }: { open: boolean; on
 
 interface HostProps {
   open: boolean
+  inert?: boolean
   mode: Mode
   unlocked: boolean
   user: Player
@@ -106,15 +107,15 @@ interface HostProps {
   toast: (msg: string) => void
 }
 
-export function HostModal({ open, ...props }: HostProps) {
+export function HostModal({ open, inert, ...props }: HostProps) {
   return (
-    <Modal open={open}>
+    <Modal open={open} inert={inert}>
       <HostBody {...props} />
     </Modal>
   )
 }
 
-function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetchu, onCancel, onStart, toast }: Omit<HostProps, 'open'>) {
+function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetchu, onCancel, onStart, toast }: Omit<HostProps, 'open' | 'inert'>) {
   const [code, setCode] = useState<string | null>(null)
   const [nameInput, setNameInput] = useState('Host')
 
