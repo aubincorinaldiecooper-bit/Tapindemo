@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useRef, type RefObject } from 'react'
+import { CardStack } from './CardStack'
+import { type RefObject } from 'react'
 import type { DuelStatus } from '../duel'
 import type { MicState } from '../answer'
 import type { DrawnCard, Mode } from '../game'
@@ -26,7 +27,6 @@ interface Props {
 }
 
 export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
-  const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
@@ -78,34 +78,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
         </div>
 
         <AnimatePresence mode="wait">
-          <motion.div
-            key={card.id}
-            className={`main-game-card ${cardClasses}`}
-            initial={{ opacity: 0, x: 80, rotate: 6, scale: 0.94 }}
-            animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -80, rotate: -6, scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            drag={canAct ? 'x' : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.25}
-            onDragStart={() => {
-              dragged.current = true
-            }}
-            onDragEnd={(_, info) => {
-              if (!canAct) return
-              if (info.offset.x > 110) onComplete()
-              else if (info.offset.x < -110) onTapOut()
-              setTimeout(() => {
-                dragged.current = false
-              }, 0)
-            }}
-            onClickCapture={(e) => {
-              if (dragged.current) {
-                e.stopPropagation()
-                e.preventDefault()
-              }
-            }}
-          >
+          <CardStack key={card.id} className={cardClasses} canAct={canAct} onSwipeRight={onComplete} onSwipeLeft={onTapOut}>
             <div className="card-top-info">
               <span className="turn-badge turn-active-badge">🎲 {badge}</span>
               <motion.div
@@ -210,7 +183,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
                 {isDuel ? (duel!.iAmDone ? 'Waiting for your rival' : `${duel!.names[0]} vs ${duel!.names[1]}`) : `${turnName}'s turn`}
               </div>
             )}
-          </motion.div>
+          </CardStack>
         </AnimatePresence>
 
         <div className="actions-secondary-row mb-2">

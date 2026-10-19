@@ -41,3 +41,9 @@
 .recap-answer-card { font-size: 11px; color: #a1a1aa; margin-bottom: 4px; }
 .recap-answer-text { font-size: 14px; color: #f5f5f4; line-height: 1.35; }
 .recap-answer-meta { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #a1a1aa; margin-top: 6px; }
+
+/* Card stack (SwipeCards): the live card in front, two face-down cards fanned behind it. */
+.card-stage { position: relative; display: flex; flex-direction: column; flex: 1; width: 100%; min-height: 0; }
+.card-stage > .main-game-card { flex: 1; cursor: grab; touch-action: none; }
+.card-stage > .main-game-card:active { cursor: grabbing; }
+.card-stage-back { position: absolute; inset: 10px 0 14px; border-radius: 28px; background: #131316; border: 1px solid #26262c; pointer-events: none; }
