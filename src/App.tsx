@@ -70,7 +70,7 @@ export default function App() {
   const isHost = !!state && state.hostId === meId
   const duel = state?.card?.kind === 'duel' && state.duel ? state.duel : null
   const iAmIn = !!duel && !!meId && duel.players.includes(meId)
-  const video = useDuelVideo(screen === 'game' && !!duel, iAmIn, room.duelToken)
+  const video = useDuelVideo(screen === 'game' && !!duel, state?.card?.id ?? 0, iAmIn, room.duelToken)
   const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? 'Someone'
 
   const confirmPurchase = () => {
@@ -141,15 +141,15 @@ export default function App() {
             onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
-              room.verdict('complete')
+              room.verdict('complete', state.card.id)
             }}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
             onNext={() => {
               toast('⏭️ Passing to next player!')
-              room.verdict('skip')
+              room.verdict('skip', state.card.id)
             }}
-            onTapOut={() => room.verdict('tapout')}
+            onTapOut={() => room.verdict('tapout', state.card.id)}
           />
         )}
       </AnimatePresence>

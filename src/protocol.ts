@@ -50,7 +50,7 @@ export interface ClientToServer {
   join_room: (p: Profile & { code: string }, ack: (r: JoinAck) => void) => void
   leave_room: () => void
   start_game: () => void
-  verdict: (v: Verdict) => void
+  verdict: (v: Verdict, cardId: number) => void
   punishment_done: () => void
   duel_token: (ack: (r: { ok: true; access: DuelAccess } | { ok: false; error: string }) => void) => void
 }

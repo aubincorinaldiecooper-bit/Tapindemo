@@ -121,14 +121,18 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
   )
   const joinRoom = useCallback((code: string, name: string, avatar: string) => call('join_room', { playerId: getPlayerId(), name, avatar, code }), [call])
   const startGame = useCallback(() => socketRef.current?.emit('start_game'), [])
-  const verdict = useCallback((v: Verdict) => socketRef.current?.emit('verdict', v), [])
+  const verdict = useCallback((v: Verdict, cardId: number) => socketRef.current?.emit('verdict', v, cardId), [])
   const punishmentDone = useCallback(() => socketRef.current?.emit('punishment_done'), [])
   const duelToken = useCallback(
     () =>
       new Promise<DuelAccess | null>((resolve) => {
         const s = socketRef.current
         if (!s) return resolve(null)
-        s.emit('duel_token', (r) => resolve(r.ok ? r.access : null))
+        const t = window.setTimeout(() => resolve(null), 8000)
+        s.emit('duel_token', (r) => {
+          window.clearTimeout(t)
+          resolve(r.ok ? r.access : null)
+        })
       }),
     [],
   )

@@ -167,7 +167,7 @@ const detach = (socketId: string, explicit: boolean) => {
     room.graceTimer = setTimeout(() => {
       room.graceTimer = undefined
       const turn = s.players.find((p) => p.id === s.turnId)
-      if (s.phase === 'game' && turn && !turn.connected && !s.punishment) advance(room)
+      if (s.phase === 'game' && turn && !turn.connected && !s.punishment && !s.duel) advance(room)
     }, TURN_GRACE_MS)
   }
   broadcast(room)
@@ -232,11 +232,13 @@ io.on('connection', (socket) => {
     dealCard(c.room, true)
   })
 
-  socket.on('verdict', (v: Verdict) => {
+  socket.on('verdict', (v: Verdict, cardId: number) => {
     const c = current()
     if (!c) return
     const s = c.room.state
     if (s.phase !== 'game' || s.punishment) return
+    // A double tap that lands after the card changed must not act on the new card.
+    if (s.card && cardId !== s.card.id) return
     const isHost = c.playerId === s.hostId
     if (s.duel) {
       const isDuelist = s.duel.players.includes(c.playerId)
@@ -263,8 +265,10 @@ io.on('connection', (socket) => {
     if (!duelsEnabled) return ack({ ok: false, error: 'Video is not configured' })
     const duelist = !!s.duel?.players.includes(c.playerId)
     const player = s.players.find((p) => p.id === c.playerId)
-    const roomName = `tapin-${s.code}`
-    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, { identity: c.playerId, name: player?.name, ttl: '20m' })
+    if (!s.duel || !s.card) return ack({ ok: false, error: 'No duel in progress' })
+    const roomName = `tapin-${s.code}-${s.card.id}`
+    const ttl = s.cardSeconds * DUEL_TIME_FACTOR + 60
+    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, { identity: c.playerId, name: player?.name, ttl })
     at.addGrant({ roomJoin: true, room: roomName, canPublish: duelist, canSubscribe: true, canPublishData: false })
     ack({ ok: true, access: { url: LIVEKIT_URL, token: await at.toJwt(), room: roomName } })
   })
