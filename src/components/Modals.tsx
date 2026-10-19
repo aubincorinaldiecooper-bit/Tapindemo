@@ -17,14 +17,15 @@ export interface ProofPhoto {
 
 export function StoreModal({ open, onClose, onUnlock }: { open: boolean; onClose: () => void; onUnlock: () => void }) {
   return (
-    <Modal open={open} className="max-w-[480px]">
+    <Modal open={open}>
       <div className="flex justify-between items-center mb-3">
-        <h2 className="mb-0 text-amber-400">GAME MODES STORE</h2>
+        <h2 className="mb-0 text-white">GAME MODES STORE</h2>
         <Pressable onClick={onClose} className="text-gray-400 font-bold text-xl px-2">
           ✕
         </Pressable>
       </div>
       <p className="text-xs text-gray-300 font-medium mb-4">Unlock extreme battle royale modes, verified reputation badges, and specialized party packs!</p>
+      <div className="store-cols">
       <div className="store-hero-betchu">
         <motion.div
           className="store-badge-red"
@@ -34,7 +35,7 @@ export function StoreModal({ open, onClose, onUnlock }: { open: boolean; onClose
           $0.99 • POPULAR
         </motion.div>
         <h3 className="font-black text-2xl text-white tracking-wide uppercase">I BETCHU WON'T</h3>
-        <div className="text-xs font-extrabold text-red-200 mb-2">SUBTITLE: LAST PLAYER STANDING</div>
+        <div className="text-xs font-extrabold text-gray-400 mb-2">LAST PLAYER STANDING</div>
         <p className="text-xs text-gray-100 mb-3 font-medium leading-relaxed">
           Battle Royale Dare Elimination! Everyone starts with 3 lives ❤️❤️❤️. Every card strictly says "I betchu won't" followed by an intense dare!
           Completing it keeps you alive. Tapping out loses a life 💔.
@@ -45,18 +46,21 @@ export function StoreModal({ open, onClose, onUnlock }: { open: boolean; onClose
           </Pressable>
         </div>
       </div>
+      <div className="store-other">
       <div className="text-xs font-bold uppercase tracking-wider text-gray-400 text-left mb-3">Other Available Game Packs</div>
       <div className="flex flex-col gap-3 mb-4">
         <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-left flex justify-between items-center">
           <div>
-            <div className="font-extrabold text-sm text-amber-400">🎉 CLASSIC TAP IN</div>
+            <div className="font-extrabold text-sm text-white">🎉 CLASSIC TAP IN</div>
             <div className="text-xs text-gray-300">Expanded deck with separate Shot O'Clock &amp; Wild cards, custom punishments, and spicy truths!</div>
           </div>
           <span className="text-xs font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/40">FREE</span>
         </div>
       </div>
+      </div>
+      </div>
       <button type="button" onClick={onClose} className="w-full text-gray-400 font-semibold text-sm py-2">
-        Back to Lobby
+        Close
       </button>
     </Modal>
   )
@@ -64,12 +68,12 @@ export function StoreModal({ open, onClose, onUnlock }: { open: boolean; onClose
 
 export function CheckoutModal({ open, onCancel, onConfirm }: { open: boolean; onCancel: () => void; onConfirm: () => void }) {
   return (
-    <Modal open={open} zIndex={2900} className="max-w-[420px] border-2 border-amber-500/80 bg-gradient-to-b from-gray-900 via-black to-black shadow-2xl">
-      <div className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 border border-amber-500/40 inline-block px-3 py-1 rounded-full mb-2">
+    <Modal open={open} zIndex={2900} className="max-w-[420px] border border-orange-500/40">
+      <div className="text-xs font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/30 inline-block px-3 py-1 rounded-full mb-2">
         IN-APP PURCHASE
       </div>
       <h2 className="text-3xl font-black text-white mb-1">UNLOCK "I BETCHU WON'T"</h2>
-      <div className="text-4xl font-black text-amber-400 my-2">
+      <div className="text-4xl font-black text-orange-400 my-2">
         $0.99 <span className="text-xs text-gray-400 font-normal">one-time unlock</span>
       </div>
       <p className="text-xs text-gray-300 mb-4 leading-relaxed">
@@ -104,7 +108,7 @@ interface HostProps {
 
 export function HostModal({ open, ...props }: HostProps) {
   return (
-    <Modal open={open} className="max-w-[460px]">
+    <Modal open={open}>
       <HostBody {...props} />
     </Modal>
   )
@@ -132,51 +136,33 @@ function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetc
       <AnimatePresence mode="wait" initial={false}>
         {!code ? (
           <motion.div key="setup" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <input type="text" placeholder="Party Room Name (e.g., Friday Night Tap In)" maxLength={24} />
-            <div className="bg-black/40 border border-white/10 rounded-2xl p-3.5 mb-4 text-left">
-              <label className="text-xs font-extrabold text-orange-400 uppercase tracking-wider block mb-2">🎮 Choose Game Mode</label>
-              <div className="flex flex-col gap-2">
-                <motion.label
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-2.5 cursor-pointer hover:bg-white/10"
-                >
-                  <input type="radio" name="gameModeSelect" checked={mode === 'classic'} onChange={() => onMode('classic')} className="mt-1 accent-orange-500" />
-                  <div>
-                    <div className="font-extrabold text-sm text-white flex items-center gap-2">
-                      <span>🎉 CLASSIC TAP IN</span>
-                      <span className="text-[10px] bg-emerald-500 text-black px-1.5 py-0.5 rounded font-black">FREE</span>
-                    </div>
-                    <div className="text-[11px] text-gray-300">Includes separate Shot O'Clock &amp; Wild cards + Custom Punishments!</div>
-                  </div>
-                </motion.label>
-                <motion.label
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-start gap-3 bg-red-950/40 border border-red-500/50 rounded-xl p-2.5 cursor-pointer hover:bg-red-900/30"
-                >
-                  <input
-                    type="radio"
-                    name="gameModeSelect"
-                    checked={mode === 'betchu'}
-                    onChange={() => (unlocked ? onMode('betchu') : onLockedBetchu())}
-                    className="mt-1 accent-red-500"
-                  />
-                  <div>
-                    <div className="font-extrabold text-sm text-red-400 flex items-center gap-2">
-                      <span>🔥 "I BETCHU WON'T"</span>
-                      <span className="text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-black">$0.99</span>
-                    </div>
-                    <div className="text-[11px] text-gray-300">3 Lives • Strictly "I betchu won't" Dares • Elimination Battle.</div>
-                  </div>
-                </motion.label>
-              </div>
-            </div>
+            <div className="form-cols">
+            <div className="form-col form-col-profile">
+            <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
             <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Choose Profile Avatar</label>
-            <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
+            </div>
+            <div className="form-col">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1 form-desktop-label">Party Room Name</label>
+            <input type="text" placeholder="Party Room Name (e.g., Friday Night Tap In)" maxLength={24} />
+            <div className="mode-toggle">
+              {(['classic', 'betchu'] as const).map((m) => (
+                <motion.button
+                  key={m}
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  className={`mode-toggle-option ${mode === m ? 'mode-toggle-active' : ''}`}
+                  onClick={() => (m === 'betchu' && !unlocked ? onLockedBetchu() : onMode(m))}
+                >
+                  {m === 'classic' ? '🎉 Classic' : '🔥 Betchu Won’t'}
+                </motion.button>
+              ))}
+            </div>
             <Pressable onClick={generate} className="btn-primary w-full text-base py-3">
               Create Room Code
             </Pressable>
+            </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div key="lobby" className="w-full" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
@@ -195,7 +181,7 @@ function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetc
             </div>
             <Pressable
               onClick={copy}
-              className="text-xs font-bold uppercase tracking-wider text-sky-400 bg-sky-950/60 border border-sky-500/30 px-4 py-2 rounded-lg mb-3"
+              className="text-xs font-bold uppercase tracking-wider text-gray-300 bg-white/5 border border-white/10 px-4 py-2 rounded-lg mb-3"
             >
               Copy Code
             </Pressable>
@@ -203,15 +189,15 @@ function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetc
               <div
                 className={
                   mode === 'betchu'
-                    ? 'text-xs font-bold uppercase tracking-wider text-red-400 bg-red-950/60 border border-red-500/30 px-3 py-1.5 rounded-full inline-block mb-3'
-                    : 'text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-950/60 border border-orange-500/30 px-3 py-1.5 rounded-full inline-block mb-3'
+                    ? 'text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-lg inline-block mb-3'
+                    : 'text-xs font-bold uppercase tracking-wider text-gray-300 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block mb-3'
                 }
               >
                 {mode === 'betchu' ? "Mode: 🔥 'I Betchu Won't' (3 Lives)" : 'Mode: Classic Tap In'}
               </div>
             </div>
             <div className="text-xs font-semibold text-gray-300 mb-2">Players Joined:</div>
-            <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto mb-3">
+            <div className="flex flex-col gap-2 mb-3">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -277,8 +263,15 @@ export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: Joi
   return (
     <Modal open={open}>
       <h2>Join Room</h2>
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Enter 4-Digit Code</label>
-      <motion.div className="code-input-group" animate={shake}>
+      <div className="form-cols">
+      <div className="form-col form-col-profile">
+      <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
+      <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
+      </div>
+      <div className="form-col">
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Enter 4-Digit Pin</label>
+      <motion.div className="code-input-group mb-4" animate={shake}>
         {digits.map((d, i) => (
           <motion.input
             key={i}
@@ -292,19 +285,17 @@ export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: Joi
             value={d}
             onChange={(e) => setDigit(i, e.target.value)}
             onKeyDown={(e) => onKeyDown(i, e)}
-            animate={d ? { scale: [1, 1.15, 1], borderColor: '#00ffff' } : { scale: 1, borderColor: 'rgba(255,255,255,0.2)' }}
-            whileFocus={{ y: -2, boxShadow: '0 0 14px rgba(0,255,255,0.35)' }}
+            animate={d ? { scale: [1, 1.15, 1], borderColor: '#f97316' } : { scale: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+            whileFocus={{ y: -2, borderColor: '#f97316' }}
             transition={{ duration: 0.25 }}
           />
         ))}
       </motion.div>
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
-      <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Choose Avatar</label>
-      <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
       <Pressable onClick={submit} className="btn-primary w-full text-base py-3">
         Join Room
       </Pressable>
+      </div>
+      </div>
       <div className="flex flex-col gap-2 mt-2">
         <button type="button" onClick={onCancel} className="w-full text-gray-400 font-semibold text-sm py-2">
           Cancel
@@ -316,9 +307,9 @@ export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: Joi
 
 export function RecapModal({ open, photos, onClose }: { open: boolean; photos: ProofPhoto[]; onClose: () => void }) {
   return (
-    <Modal open={open} zIndex={2400} className="max-w-[440px]">
+    <Modal open={open} zIndex={2400}>
       <div className="flex justify-between items-center mb-3">
-        <h2 className="mb-0 text-purple-400">PARTY RECAP</h2>
+        <h2 className="mb-0 text-white">PARTY RECAP</h2>
         <Pressable onClick={onClose} className="text-gray-400 font-bold text-xl">
           ✕
         </Pressable>
@@ -352,7 +343,7 @@ export function RecapModal({ open, photos, onClose }: { open: boolean; photos: P
         )}
       </motion.div>
       <Pressable onClick={onClose} className="w-full btn-primary text-sm py-2.5">
-        Back to Game
+        Close
       </Pressable>
     </Modal>
   )
