@@ -121,7 +121,7 @@ export function HostModal({ open, inert, ...props }: HostProps) {
 }
 
 function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
-  const [nameInput, setNameInput] = useState('Host')
+  const [nameInput, setNameInput] = useState(user.name === 'Player' ? 'Host' : user.name)
 
   return (
     <>
@@ -182,7 +182,7 @@ interface JoinProps {
 
 export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel, toast }: JoinProps) {
   const [digits, setDigits] = useState(() => (initialCode ? initialCode.split('') : ['', '', '', '']))
-  const [nameInput, setNameInput] = useState('Player')
+  const [nameInput, setNameInput] = useState(user.name)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const shake = useAnimationControls()
 

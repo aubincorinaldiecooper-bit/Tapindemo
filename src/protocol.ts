@@ -20,6 +20,14 @@ export interface RoomState {
   turnId: string | null
   deadline: number | null
   punishment: { playerId: string; text: string } | null
+  // Set while a head-to-head card is on the table: the two duelists and who has already finished.
+  duel: { players: [string, string]; done: string[] } | null
+}
+
+export interface DuelAccess {
+  url: string
+  token: string
+  room: string
 }
 
 export const TIMER_OPTIONS = [10, 15, 20] as const
@@ -44,6 +52,7 @@ export interface ClientToServer {
   start_game: () => void
   verdict: (v: Verdict) => void
   punishment_done: () => void
+  duel_token: (ack: (r: { ok: true; access: DuelAccess } | { ok: false; error: string }) => void) => void
 }
 
 export interface ServerToClient {

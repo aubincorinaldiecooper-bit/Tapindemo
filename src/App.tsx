@@ -8,6 +8,7 @@ import { ProofCameraModal } from './components/ProofCamera'
 import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
 import { roomFromUrl, savedParty, useDeadline, useRoom } from './net'
+import { useDuelVideo } from './duel'
 import { DEFAULT_TIMER, type TimerSeconds } from './protocol'
 
 type Screen = 'title' | 'lobby' | 'game'
@@ -67,6 +68,10 @@ export default function App() {
   const turnPlayer = state?.players.find((p) => p.id === state.turnId)
   const punished = state?.punishment ? state.players.find((p) => p.id === state.punishment?.playerId) : undefined
   const isHost = !!state && state.hostId === meId
+  const duel = state?.card?.kind === 'duel' && state.duel ? state.duel : null
+  const iAmIn = !!duel && !!meId && duel.players.includes(meId)
+  const video = useDuelVideo(screen === 'game' && !!duel, iAmIn, room.duelToken)
+  const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? 'Someone'
 
   const confirmPurchase = () => {
     setUnlocked(true)
@@ -132,6 +137,7 @@ export default function App() {
             user={user}
             isMyTurn={isMyTurn}
             turnName={turnPlayer?.name ?? 'Someone'}
+            duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
             onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
