@@ -42,25 +42,24 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
     >
       <div className={`game-container ${cardClasses}`}>
         <div className="game-top-bar">
-          <Pressable className="icon-nav-btn" title="Exit" onClick={onHome}>
-            🏠
+          <Pressable className="icon-nav-btn exit-btn" title="Exit game" aria-label="Exit game" onClick={onHome}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </Pressable>
           <div className="player-header-pill">
             <img src={user.avatar} className="profile-avatar" />
             <div className="flex flex-col text-left">
               <span className="profile-name">{user.name}</span>
-              <span className="rep-badge rep-badge-high">🛡️ Rep 94%</span>
             </div>
           </div>
-          {isBetchu ? (
+          {isBetchu && (
             <div className="lives-meter-box">
               <span className="heart-icon">❤️</span>
               <span className="heart-icon">❤️</span>
               <span className="heart-icon">❤️</span>
-            </div>
-          ) : (
-            <div className="classic-tapout-pill">
-              <span>⚡ Tap Outs</span>
             </div>
           )}
         </div>
@@ -76,6 +75,10 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.25}
+            onDragEnd={(_, info) => {
+              if (info.offset.x > 110) onComplete()
+              else if (info.offset.x < -110) onTapOut()
+            }}
           >
             <div className="card-top-info">
               <span className="turn-badge turn-active-badge">🎲 {badge}</span>
@@ -118,9 +121,12 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
               </motion.div>
             </div>
 
-            <div className="w-full flex flex-col gap-2 mt-4">
-              <Pressable className="btn-complete-dare" onClick={onComplete}>
-                {isBetchu || isWildcard || isShotOClock ? 'I did it' : '✨ Completed Dare'}
+            <div className="verdict-row">
+              <Pressable className="btn-tapout-big verdict-decline" onClick={onTapOut}>
+                Tap out{isBetchu ? ' (−1 ❤️)' : ''}
+              </Pressable>
+              <Pressable className="btn-complete-dare verdict-accept" onClick={onComplete}>
+                I did it
               </Pressable>
             </div>
           </motion.div>
@@ -128,19 +134,15 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
 
         <div className="actions-secondary-row mb-2">
           <Pressable className="action-chip-btn" onClick={onSnitch}>
-            <span>🚨</span> Snitch Mode
+            <span>🚨</span> Snitch
           </Pressable>
           <Pressable className="action-chip-btn" onClick={onProof}>
-            <span>📸</span> Proof Mode
+            <span>📸</span> Proof
           </Pressable>
           <Pressable className="action-chip-btn" onClick={onNext}>
-            <span>⏭️</span> Next Player
+            <span>⏭️</span> Skip
           </Pressable>
         </div>
-
-        <Pressable className="btn-tapout-big" onClick={onTapOut}>
-          <span>⚡</span> TAP OUT ({isBetchu ? 'Lose 1 Life 💔' : 'Penalty Punishment'})
-        </Pressable>
       </div>
     </motion.div>
   )
@@ -175,7 +177,7 @@ export function PunishmentOverlay({ text, onDone }: { text: string | null; onDon
             whileTap={{ scale: 0.92 }}
             transition={{ delay: 0.45, type: 'spring', stiffness: 400, damping: 18 }}
           >
-            I Did It
+            Done
           </motion.div>
         </motion.div>
       )}

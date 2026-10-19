@@ -148,15 +148,15 @@
         }
 
         .btn-store-gold {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: rgba(255, 255, 255, 0.07);
             color: white;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.18);
             padding: 1rem 2rem;
             border-radius: 9999px;
             font-size: 1.15rem;
             font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45);
+            box-shadow: none;
             transition: all 0.2s ease;
             width: 85vw;
             max-width: 320px;
@@ -165,9 +165,9 @@
         }
 
         .btn-betchu-mode {
-            background: linear-gradient(135deg, #dc2626, #7f1d1d);
+            background: linear-gradient(135deg, #ea580c, #b91c1c);
             color: white;
-            border: 1px solid rgba(254, 202, 202, 0.4);
+            border: none;
             padding: 1.1rem 2rem;
             border-radius: 9999px;
             font-size: 1.15rem;
@@ -816,3 +816,633 @@
             box-shadow: 0 0 12px rgba(249, 115, 22, 0.8);
         }
 
+
+        /* ===== Minimal dark reskin ===== */
+        :root {
+            --bg: #0a0a0b;
+            --surface-1: #131316;
+            --surface-2: #1c1c21;
+            --surface-3: #26262c;
+            --line: rgba(255, 255, 255, 0.08);
+            --line-strong: rgba(255, 255, 255, 0.16);
+            --text: #f5f5f4;
+            --muted: #a1a1aa;
+            --accent: #f97316;
+            --danger: #ef4444;
+        }
+
+        body { background-color: var(--bg); }
+        .title-screen-container { background: var(--bg); }
+
+        .title-main-text {
+            color: var(--text);
+            text-shadow: none;
+        }
+        .title-sub-text { color: var(--muted); }
+        .title-sub-text .party-word { color: var(--accent); text-shadow: none; }
+
+        .btn-primary {
+            background: var(--accent);
+            box-shadow: none;
+        }
+        .btn-primary:hover:not(:disabled),
+        .btn-primary:active:not(:disabled) { box-shadow: none; }
+
+        .btn-betchu-mode {
+            background: var(--surface-2);
+            border: 1px solid rgba(249, 115, 22, 0.45);
+            box-shadow: none;
+        }
+
+        .btn-store-gold {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+
+        .icon-nav-btn,
+        .player-header-pill,
+        .action-chip-btn {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            backdrop-filter: none;
+        }
+        .action-chip-btn:active { background: var(--surface-3); }
+        .icon-nav-btn:active { background: var(--surface-3); }
+
+        .lives-meter-box,
+        .classic-tapout-pill,
+        .rep-badge-high,
+        .rep-badge {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+        .profile-avatar { border-color: var(--accent); box-shadow: none; }
+
+        .main-game-card {
+            background: var(--surface-1);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+        .main-game-card.betchu-active-card {
+            background: var(--surface-1) !important;
+            border: 1px solid rgba(249, 115, 22, 0.5) !important;
+            box-shadow: none !important;
+        }
+
+        .card-top-info { }
+        .timer-section {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            color: var(--text);
+        }
+
+        .spice-tag {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            box-shadow: none;
+        }
+        .spice-wildcard,
+        .spice-shotoclock,
+        .spice-betchu-dare {
+            background: rgba(249, 115, 22, 0.12);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            color: var(--accent);
+            box-shadow: none;
+        }
+
+        .dare-box { text-shadow: none; }
+
+        .wildcard-callout,
+        .shotoclock-callout,
+        .betchu-dare-callout {
+            color: var(--accent);
+            text-shadow: none;
+        }
+
+        .btn-complete-dare {
+            background: var(--accent);
+            box-shadow: none;
+        }
+
+        .btn-tapout-big {
+            background: var(--surface-2);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            color: #fca5a5;
+            box-shadow: none;
+        }
+
+        .punishment-overlay {
+            background-color: var(--bg);
+            backdrop-filter: none;
+        }
+        .punishment-title {
+            color: var(--danger);
+            text-shadow: none;
+            animation: none;
+        }
+
+        .modal-content,
+        .party-feed-container,
+        .party-list {
+            background: var(--surface-1);
+            border: 1px solid var(--line);
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        .code-input,
+        .code-display {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+
+        .store-badge-red { color: var(--accent); }
+        .turn-active-badge { color: var(--accent); }
+        .btn-photo-action {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            background: var(--surface-2) !important;
+            border: 1px solid var(--line) !important;
+            color: var(--text) !important;
+            box-shadow: none !important;
+        }
+
+        /* ===== Declutter pass ===== */
+        .main-game-card { border: none; }
+        .game-container { padding-left: 4px; padding-right: 4px; }
+        .card-top-info { opacity: 0.9; }
+        .turn-badge {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 4px 0;
+        }
+        .timer-section {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 4px 0;
+        }
+        .spice-tag {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 0;
+            margin-bottom: 10px;
+        }
+        .spice-wildcard, .spice-shotoclock, .spice-betchu-dare {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+        }
+        .player-header-pill {
+            background: transparent;
+            border: none;
+        }
+        .lives-meter-box { background: transparent; border: none; }
+        .icon-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+        }
+        .action-chip-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-weight: 600;
+        }
+        .action-chip-btn:active { background: var(--surface-2); color: var(--text); }
+        .btn-tapout-big {
+            border: none;
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .icebreaker-icon-glow { display: none; }
+
+        /* ===== Verdict row ===== */
+        .verdict-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .verdict-decline {
+            flex: 1;
+            border-radius: 16px;
+            padding: 14px 10px;
+        }
+        .verdict-accept {
+            flex: 1.4;
+            border-radius: 16px;
+            padding: 14px 10px;
+        }
+
+        /* ===== Special card frames — unified ===== */
+        .main-game-card.wildcard-active-card,
+        .main-game-card.shotoclock-active-card,
+        .main-game-card.icebreaker-active-card,
+        .main-game-card.betchu-active-card {
+            background: var(--surface-1) !important;
+            border: 1px solid rgba(249, 115, 22, 0.5) !important;
+            box-shadow: none !important;
+            animation: none !important;
+        }
+
+        /* ===== Store hero — minimal ===== */
+        .store-hero-betchu {
+            background: var(--surface-2);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            box-shadow: none;
+        }
+        .store-badge-red { color: var(--accent); }
+        .code-input-group .code-input { box-shadow: none; }
+
+        /* ===== Declutter pass 2 ===== */
+        .code-input { color: var(--text); }
+        .code-display {
+            color: var(--accent);
+            text-shadow: none;
+        }
+        .avatar-option.selected { box-shadow: none; }
+        .store-badge-red {
+            background: var(--accent);
+            color: #000;
+            box-shadow: none;
+        }
+        .liquid { background: var(--accent); }
+        .glass-container { box-shadow: none; animation: none; }
+        .loading-text { text-shadow: none; animation: none; color: var(--muted); }
+
+        /* ===== Avatar upload button ===== */
+        .avatar-upload {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            padding: 0;
+            border: 1px solid var(--line-strong);
+            background: var(--surface-2);
+            cursor: pointer;
+            overflow: visible;
+        }
+        .avatar-upload-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .avatar-upload-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--surface-1);
+        }
+
+        /* ===== Organized form pass ===== */
+        .code-input-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .code-input {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+        }
+        .avatar-picker-grid {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            justify-items: center;
+        }
+        .avatar-option {
+            width: 48px;
+            height: 48px;
+            border-width: 2px;
+        }
+        .avatar-upload {
+            width: 48px;
+            height: 48px;
+            border: 2px dashed var(--line-strong);
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-upload.selected {
+            border-style: solid;
+            border-color: var(--accent);
+        }
+        .avatar-upload .avatar-upload-badge {
+            position: static;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== No visible scrollbar, tighter modal ===== */
+        .modal-content {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .modal-content::-webkit-scrollbar { display: none; }
+        .modal-content { padding: 22px 20px; }
+        .modal-content h2 { margin-bottom: 0.8rem; }
+        .modal-content input[type="text"], .modal-content select { margin-bottom: 10px; padding: 12px 14px; }
+        .code-input-group { margin-bottom: 12px; }
+        .avatar-picker-grid { margin: 6px 0 12px; }
+
+        /* ===== Profile DP ===== */
+        .avatar-dp-row {
+            display: flex;
+            justify-content: center;
+            margin: 4px 0 16px;
+        }
+        .avatar-dp {
+            position: relative;
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            padding: 0;
+            border: 1px solid var(--line-strong);
+            background: var(--surface-2);
+            cursor: pointer;
+        }
+        .avatar-dp-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .avatar-dp-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--surface-1);
+        }
+
+        /* ===== Mode segmented toggle ===== */
+        .mode-toggle {
+            display: flex;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 4px;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+        .mode-toggle-option {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .mode-toggle-option.mode-toggle-active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* ===== Breathing room ===== */
+        .modal-content { padding: 26px 22px; }
+        .avatar-dp-row { margin: 6px 0 22px; }
+        .modal-content input[type="text"], .modal-content select { margin-bottom: 14px; padding: 13px 15px; }
+        .mode-toggle { margin-bottom: 18px; }
+        .code-input-group { margin-bottom: 18px; }
+
+        /* ===== Screen reface: title / lobby / store ===== */
+        .btn-primary, .btn-betchu-mode, .btn-store-gold {
+            border-radius: 16px;
+            padding: 0.95rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            max-width: 320px;
+        }
+        .btn-primary:hover:not(:disabled),
+        .btn-betchu-mode:hover,
+        .btn-store-gold:hover { transform: none; }
+        .party-feed-container { background: var(--bg); }
+        .party-feed-header {
+            font-size: 2.4rem;
+            text-shadow: none;
+            letter-spacing: 1px;
+        }
+        .title-main-text { font-size: 16vw; }
+        .modal-content h2 { font-size: 1.9rem; letter-spacing: 0.5px; }
+        .store-hero-betchu h3 { font-size: 1.4rem; }
+        @media (min-width: 768px) {
+            .btn-primary { padding: 1rem 2rem; font-size: 1.1rem; }
+        }
+
+        /* ===== Lobby: center the action block ===== */
+        .party-feed-container { justify-content: center; }
+        .party-feed-container > div:first-child {
+            position: absolute;
+            top: 18px;
+            left: 24px;
+            right: 24px;
+        }
+
+        /* ===== Lobby polish ===== */
+        .party-feed-container .party-feed-header {
+            font-size: 2rem;
+            letter-spacing: 2px;
+            color: var(--muted);
+        }
+        .party-feed-container .btn-primary,
+        .party-feed-container .btn-store-gold {
+            padding: 1.15rem 1.5rem;
+            font-size: 1.05rem;
+        }
+        .party-feed-container .flex.flex-col.gap-3 { gap: 14px; }
+
+        /* ===== Lobby profile ===== */
+        .lobby-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 36px;
+        }
+        .lobby-profile-img {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+            margin-bottom: 12px;
+        }
+        .lobby-profile-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .lobby-profile-sub {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .party-feed-container .guest-text {
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+            margin-top: 1.5rem;
+        }
+
+        /* ===== Final cohesion pass ===== */
+        .punishment-overlay button {
+            border-radius: 16px;
+            box-shadow: none;
+            padding: 0.95rem 2.5rem;
+            font-size: 1rem;
+            letter-spacing: 0.02em;
+        }
+        .avatar-dp { border-color: var(--accent); }
+        .lobby-profile-img { background: var(--surface-3); }
+        .done-button {
+            border-radius: 16px;
+            box-shadow: none;
+            padding: 0.95rem 2.5rem;
+            font-size: 1rem;
+            letter-spacing: 0.02em;
+            background: var(--text);
+            color: #000;
+        }
+
+        /* ===== Desktop layouts (>= 1024px) ===== */
+        .title-brand, .title-actions { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        @media (min-width: 1024px) {
+            .title-screen-container {
+                flex-direction: row;
+                justify-content: center;
+                gap: 96px;
+                padding: 48px;
+            }
+            .title-brand { width: auto; align-items: flex-start; text-align: left; }
+            .title-main-text { font-size: 9rem; margin-bottom: 0.5rem; }
+            .title-sub-text { font-size: 1.5rem; margin-bottom: 0; }
+            .title-actions { width: 380px; }
+            .title-actions .btn-primary { width: 100%; max-width: none; }
+
+            .game-container {
+                max-width: 1100px;
+                max-height: none;
+                height: 100vh;
+                padding: 28px 48px 36px;
+                display: grid;
+                grid-template-columns: 1fr 640px 1fr;
+                grid-template-rows: auto 1fr;
+                column-gap: 32px;
+                align-items: stretch;
+            }
+            .game-top-bar { grid-column: 1 / -1; margin-bottom: 20px; }
+            .game-container > .card-stage,
+            .game-container > div:nth-of-type(2) { grid-column: 2; }
+            .main-game-card { min-height: 560px; }
+            .dare-box { font-size: 2rem; }
+            .actions-secondary-row {
+                grid-column: 3;
+                grid-row: 2;
+                flex-direction: column;
+                justify-content: center;
+                align-items: flex-start;
+                gap: 18px;
+                width: auto;
+                margin: 0;
+            }
+            .actions-secondary-row .action-chip-btn {
+                flex-direction: row;
+                gap: 10px;
+                font-size: 1rem;
+                padding: 12px 18px;
+                background: var(--surface-1);
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                min-width: 150px;
+            }
+
+            .party-feed-container { flex-direction: row; gap: 96px; justify-content: center; }
+            .party-feed-container .party-feed-header { position: absolute; top: 40px; left: 48px; margin: 0; }
+            .lobby-profile { margin: 0; }
+            .lobby-profile-img { width: 160px; height: 160px; }
+            .lobby-profile-name { font-size: 1.75rem; }
+            .party-feed-container .flex.flex-col.gap-3 { max-width: 380px; width: 380px; }
+            .party-feed-container .guest-text { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); }
+        }
+        @media (min-width: 1024px) {
+            .game-container .actions-secondary-row {
+                display: flex !important;
+                flex-direction: column !important;
+                grid-template-columns: none;
+                align-self: center;
+                justify-self: start;
+                justify-content: center;
+                gap: 16px;
+            }
+            .game-container .actions-secondary-row .action-chip-btn { width: 160px; justify-content: flex-start; }
+        }
+        .form-desktop-label { display: none; }
+        @media (min-width: 1024px) {
+            .modal-content { max-width: 560px; padding: 32px 36px; }
+            .modal-content:has(.form-cols) { max-width: 820px; }
+            .form-cols { display: grid; grid-template-columns: 260px 1fr; gap: 40px; text-align: left; align-items: start; margin-top: 8px; }
+            .form-col-profile { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--line); padding-right: 40px; }
+            .form-col-profile label, .form-col-profile input { align-self: stretch; }
+            .form-col-profile .avatar-dp-row { margin: 8px 0 24px; }
+            .form-col-profile .avatar-dp { width: 120px; height: 120px; }
+            .form-desktop-label { display: block; }
+            .form-col .btn-primary { margin-top: 8px; }
+            .modal-content:has(.store-cols) { max-width: 860px; }
+            .store-cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: start; text-align: left; }
+            .store-hero-betchu { margin-bottom: 0; }
+            .modal-content:has(.recap-grid) { max-width: 760px; }
+            .recap-grid { grid-template-columns: repeat(3, 1fr); }
+            .recap-grid .col-span-2 { grid-column: 1 / -1; height: 180px; }
+            .code-display span { font-size: 3.5rem; }
+        }
+        .modal-content:has(.store-cols) { max-width: 480px; }
+        .modal-content:has(.form-cols) { max-width: 460px; }
+        @media (min-width: 1024px) {
+            .modal-content:has(.form-cols) { max-width: 820px; }
+            .modal-content:has(.store-cols) { max-width: 860px; }
+            .form-col .code-input-group { justify-content: flex-start; gap: 12px; }
+            .form-col .code-input { flex: 0 0 64px; width: 64px; height: 64px; font-size: 1.6rem; }
+            .recap-grid .col-span-2 { grid-column: 1 / -1 !important; }
+            .store-cols .store-hero-betchu h3 { font-size: 1.6rem; }
+        }

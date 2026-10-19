@@ -2,7 +2,7 @@ export type Spice = 'Icebreaker' | 'Mild' | 'Spicy' | 'Wild' | "Shot O'Clock" | 
 export interface Card { text: string; type: string; spice: Spice }
 
 export const avatarsList: string[] = [
-  "https://placehold.co/120x120/ea580c/ffffff?text=🔥",
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' fill='%2326262c'/><circle cx='60' cy='46' r='22' fill='%23a1a1aa'/><path d='M18 112c4-24 22-36 42-36s38 12 42 36z' fill='%23a1a1aa'/></svg>",
   "https://placehold.co/120x120/3b82f6/ffffff?text=⚡",
   "https://placehold.co/120x120/10b981/ffffff?text=💀",
   "https://placehold.co/120x120/8b5cf6/ffffff?text=👑",

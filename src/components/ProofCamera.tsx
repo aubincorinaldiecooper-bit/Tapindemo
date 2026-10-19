@@ -10,7 +10,7 @@ interface Props {
 
 export function ProofCameraModal({ open, ...props }: Props) {
   return (
-    <Modal open={open} zIndex={2500} className="max-w-[420px] bg-black border-2 border-orange-500/80 p-4">
+    <Modal open={open} zIndex={2500} className="max-w-[420px] border border-white/10 p-4">
       <CameraBody {...props} />
     </Modal>
   )
@@ -70,13 +70,13 @@ function CameraBody({ onClose, onSubmit }: Omit<Props, 'open'>) {
   return (
     <>
       <div className="flex justify-between items-center mb-2">
-        <div className="text-xs font-extrabold uppercase tracking-widest text-orange-400 flex items-center gap-1">📸 DARE PROOF CAMERA</div>
+        <div className="text-xs font-extrabold uppercase tracking-widest text-gray-400 flex items-center gap-1">📸 Dare Proof Camera</div>
         <Pressable onClick={close} className="text-gray-400 font-bold text-lg">
           ✕
         </Pressable>
       </div>
       <p className="text-xs text-gray-300 mb-3">Snap proof or record your dare completion for the party story recap!</p>
-      <div className="relative w-full h-[260px] bg-gray-900 rounded-2xl overflow-hidden border border-white/20 mb-3 flex items-center justify-center">
+      <div className="relative w-full h-[260px] bg-[#131316] rounded-2xl overflow-hidden border border-white/10 mb-3 flex items-center justify-center">
         <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${snapshot ? 'hidden' : ''}`} />
         {snapshot && (
           <motion.img

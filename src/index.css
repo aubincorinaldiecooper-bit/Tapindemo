@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "..";
 @import "./legacy.css" layer(components);
 
 /* Motion drives transforms on these; keep CSS transitions off transform so springs stay crisp. */

@@ -1,6 +1,5 @@
 import { motion } from 'motion/react'
-import { useRef, useState, type ChangeEvent } from 'react'
-import { avatarsList } from '../data'
+import { useRef, type ChangeEvent } from 'react'
 
 interface Props {
   selected: string
@@ -9,18 +8,14 @@ interface Props {
 }
 
 export function AvatarPicker({ selected, onSelect, onUploaded }: Props) {
-  const [custom, setCustom] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
-  const selfieRef = useRef<HTMLInputElement>(null)
 
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      const url = reader.result as string
-      setCustom((prev) => [url, ...prev])
-      onSelect(url)
+      onSelect(reader.result as string)
       onUploaded()
     }
     reader.readAsDataURL(file)
@@ -28,36 +23,23 @@ export function AvatarPicker({ selected, onSelect, onUploaded }: Props) {
   }
 
   return (
-    <>
-      <div className="photo-actions-row mb-2">
-        <motion.button type="button" whileTap={{ scale: 0.94 }} className="btn-photo-action motion-press" onClick={() => selfieRef.current?.click()}>
-          📸 Take Selfie
-        </motion.button>
-        <motion.button type="button" whileTap={{ scale: 0.94 }} className="btn-photo-action motion-press" onClick={() => fileRef.current?.click()}>
-          📁 Upload Photo
-        </motion.button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-        <input ref={selfieRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handleUpload} />
-      </div>
-      <div className="avatar-picker-grid">
-        {[...custom, ...avatarsList].map((url) => {
-          const isSelected = url === selected
-          return (
-            <motion.img
-              key={url}
-              src={url}
-              layout
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 1, scale: isSelected ? 1.1 : 1 }}
-              whileHover={{ scale: isSelected ? 1.14 : 1.06 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-              className={`avatar-option ${isSelected ? 'selected' : ''}`}
-              onClick={() => onSelect(url)}
-            />
-          )
-        })}
-      </div>
-    </>
+    <div className="avatar-dp-row">
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.94 }}
+        className="avatar-dp motion-press"
+        onClick={() => fileRef.current?.click()}
+        title="Change profile photo"
+      >
+        <motion.img key={selected} src={selected} className="avatar-dp-img" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} />
+        <span className="avatar-dp-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </span>
+      </motion.button>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+    </div>
   )
 }

@@ -17,6 +17,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [screen, setScreen] = useState<Screen>('title')
   const [modal, setModal] = useState<ModalName>(null)
+  const [checkoutFrom, setCheckoutFrom] = useState<ModalName>(null)
   const [mode, setMode] = useState<Mode>('classic')
   const [unlocked, setUnlocked] = useState(false)
   const [user, setUser] = useState<Player>({ name: 'Player', avatar: avatarsList[0] })
@@ -64,14 +65,6 @@ export default function App() {
     setScreen('game')
   }
 
-  const playBetchu = (next: () => void) => {
-    if (!unlocked) setModal('checkout')
-    else {
-      setMode('betchu')
-      next()
-    }
-  }
-
   const confirmPurchase = () => {
     setUnlocked(true)
     setMode('betchu')
@@ -96,24 +89,19 @@ export default function App() {
           <TitleScreen
             key="title"
             unlocked={unlocked}
-            onPlayClassic={() => {
-              setMode('classic')
-              setScreen('lobby')
-            }}
-            onPlayBetchu={() => playBetchu(() => setScreen('lobby'))}
+            onPlay={() => setScreen('lobby')}
             onOpenStore={() => setModal('store')}
           />
         )}
         {screen === 'lobby' && (
           <LobbyScreen
             key="lobby"
+            user={user}
             onOpenRecap={() => setModal('recap')}
-            onOpenStore={() => setModal('store')}
-            onHostClassic={() => {
+            onHost={() => {
               setMode('classic')
               setModal('host')
             }}
-            onHostBetchu={() => playBetchu(() => setModal('host'))}
             onJoin={() => setModal('join')}
           />
         )}
@@ -140,8 +128,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <StoreModal open={modal === 'store'} onClose={() => setModal(null)} onUnlock={() => setModal('checkout')} />
-      <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(null)} onConfirm={confirmPurchase} />
+      <StoreModal open={modal === 'store'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
+      <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
       <HostModal
         open={modal === 'host'}
         mode={mode}
@@ -150,7 +138,7 @@ export default function App() {
         onAvatar={(avatar) => setUser((u) => ({ ...u, avatar }))}
         onName={(name) => setUser((u) => ({ ...u, name }))}
         onMode={setMode}
-        onLockedBetchu={() => setModal('checkout')}
+        onLockedBetchu={() => { setCheckoutFrom('host'); setModal('checkout') }}
         onCancel={() => setModal(null)}
         onStart={startGame}
         toast={toast}

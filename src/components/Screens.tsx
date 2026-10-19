@@ -16,14 +16,14 @@ export function LoadingScreen() {
 
 interface TitleProps {
   unlocked: boolean
-  onPlayClassic: () => void
-  onPlayBetchu: () => void
+  onPlay: () => void
   onOpenStore: () => void
 }
 
-export function TitleScreen({ unlocked, onPlayClassic, onPlayBetchu, onOpenStore }: TitleProps) {
+export function TitleScreen({ unlocked, onPlay, onOpenStore }: TitleProps) {
   return (
     <motion.div className="title-screen-container" {...fade} transition={{ duration: 0.3 }}>
+      <div className="title-brand">
       <motion.div
         className="title-main-text"
         initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -35,12 +35,17 @@ export function TitleScreen({ unlocked, onPlayClassic, onPlayBetchu, onOpenStore
       <motion.div className="title-sub-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
         THE <span className="party-word">PARTY</span> APP
       </motion.div>
+      </div>
 
-      <motion.div
-        className="w-full max-w-[340px] bg-red-950/70 border-2 border-red-500/80 rounded-2xl p-3 mb-4 text-center shadow-xl backdrop-blur-md"
+      <div className="title-actions">
+      <motion.button
+        type="button"
+        onClick={onOpenStore}
+        className="w-full max-w-[340px] bg-[#1c1c21] border border-orange-500/40 rounded-2xl p-3 mb-6 text-center"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 24 }}
+        whileTap={{ scale: 0.97 }}
       >
         <motion.div
           key={unlocked ? 'unlocked' : 'locked'}
@@ -49,94 +54,66 @@ export function TitleScreen({ unlocked, onPlayClassic, onPlayBetchu, onOpenStore
           transition={{ type: 'spring', stiffness: 500, damping: 15 }}
           className={
             unlocked
-              ? 'text-[10px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-900/60 border border-emerald-500/40 inline-block px-3 py-0.5 rounded-full mb-1'
-              : 'text-[10px] font-black uppercase tracking-widest text-amber-300 bg-amber-900/60 border border-amber-500/40 inline-block px-3 py-0.5 rounded-full mb-1'
+              ? 'text-[10px] font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/40 inline-block px-3 py-0.5 rounded-full mb-1'
+              : 'text-[10px] font-black uppercase tracking-widest text-orange-400/80 bg-orange-500/10 border border-orange-500/30 inline-block px-3 py-0.5 rounded-full mb-1'
           }
         >
           {unlocked ? '✅ UNLOCKED • READY TO PLAY' : '🔒 PREMIUM MODE • $0.99'}
         </motion.div>
         <div className="font-extrabold text-xl text-white tracking-tight">I BETCHU WON'T</div>
-        <div className="text-xs font-bold text-red-200 uppercase tracking-wide">Last Player Standing • 3 Lives • Strictly Dares</div>
-      </motion.div>
+        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Last Player Standing • 3 Lives • Strictly Dares</div>
+      </motion.button>
 
       <motion.div
-        className="flex flex-col gap-3 w-full items-center"
-        initial="hidden"
-        animate="show"
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.4 } } }}
+        className="w-full flex justify-center"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
       >
-        {[
-          { label: '🎉 Play Classic Tap In', className: 'btn-primary', onClick: onPlayClassic },
-          { label: '🔥 Play "I Betchu Won\'t"', className: 'btn-betchu-mode', onClick: onPlayBetchu },
-          { label: '🛒 Game Modes Store', className: 'btn-store-gold', onClick: onOpenStore },
-        ].map((b) => (
-          <motion.div key={b.label} className="w-full flex justify-center" variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}>
-            <Pressable className={b.className} onClick={b.onClick}>
-              {b.label}
-            </Pressable>
-          </motion.div>
-        ))}
+        <Pressable className="btn-primary" onClick={onPlay}>
+          Play
+        </Pressable>
       </motion.div>
-
-      <div className="guest-text" onClick={onPlayClassic}>
-        Play as Guest
       </div>
     </motion.div>
   )
 }
 
 interface LobbyProps {
-  onOpenRecap: () => void
-  onOpenStore: () => void
-  onHostClassic: () => void
-  onHostBetchu: () => void
+  user: { name: string; avatar: string }
+  onHost: () => void
   onJoin: () => void
+  onOpenRecap: () => void
 }
 
-export function LobbyScreen({ onOpenRecap, onOpenStore, onHostClassic, onHostBetchu, onJoin }: LobbyProps) {
+export function LobbyScreen({ user, onHost, onJoin, onOpenRecap }: LobbyProps) {
   return (
     <motion.div className="party-feed-container" {...fade} transition={{ duration: 0.3 }}>
-      <div className="w-full max-w-[440px] flex justify-between items-center mb-2">
-        <h1 className="party-feed-header mb-0">Party Lobby</h1>
-        <div className="flex items-center gap-2">
-          <Pressable
-            onClick={onOpenRecap}
-            className="bg-purple-600/30 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1"
-          >
-            📸 Recap
-          </Pressable>
-          <Pressable
-            onClick={onOpenStore}
-            className="bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1"
-          >
-            🛒 Store
-          </Pressable>
-        </div>
-      </div>
+      <h1 className="party-feed-header mb-6 text-center">Party Lobby</h1>
 
-      <div className="party-list">
-        <motion.div
-          className="bg-black/50 border border-white/10 rounded-2xl p-4 text-center"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <p className="text-gray-300 font-bold text-base mb-1">Choose your party mode below!</p>
-          <p className="text-xs text-gray-400">Classic Casual Truth/Dares with separate Shot O'Clock &amp; Wildcards, plus Punishments</p>
-        </motion.div>
-      </div>
+      <motion.div
+        className="lobby-profile"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 22 }}
+      >
+        <img src={user.avatar} alt="" className="lobby-profile-img" />
+        <div className="lobby-profile-name">{user.name}</div>
+        <div className="lobby-profile-sub">Ready to play</div>
+      </motion.div>
 
       <div className="w-full max-w-[320px] flex flex-col gap-3">
-        <Pressable className="btn-primary w-full" onClick={onHostClassic}>
-          🎉 Host Classic Tap In
+        <Pressable className="btn-primary w-full" onClick={onHost}>
+          Host Room
         </Pressable>
-        <Pressable className="btn-betchu-mode w-full" onClick={onHostBetchu}>
-          🔥 Host "I Betchu Won't"
-        </Pressable>
-        <Pressable className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #4b5563, #1f2937)' }} onClick={onJoin}>
-          Join Room Code
+        <Pressable className="btn-store-gold w-full" onClick={onJoin}>
+          Join Room
         </Pressable>
       </div>
+
+      <button type="button" onClick={onOpenRecap} className="guest-text">
+        View Party Recap
+      </button>
     </motion.div>
   )
 }
