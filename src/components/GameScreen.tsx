@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useRef, type RefObject } from 'react'
 import type { DuelStatus } from '../duel'
+import type { MicState } from '../answer'
 import type { DrawnCard, Mode } from '../game'
 import type { Player } from './Modals'
 import { Pressable } from './ui'
@@ -15,13 +16,16 @@ interface Props {
   duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
   onComplete: () => void
+  // Spoken answer (Phonon). `mic` is only passed when the room has voice answers and this device can record.
+  answer: { name: string; text: string; pending: boolean } | null
+  mic: { state: MicState; onStart: () => void; onStop: () => void } | null
   onSnitch: () => void
   onProof: () => void
   onNext: () => void
   onTapOut: () => void
 }
 
-export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
   const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
@@ -164,7 +168,32 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
               <motion.div className="dare-box" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                 "{card.text}"
               </motion.div>
+              {answer && (
+                <motion.div className={`spoken-answer${answer.pending ? ' is-pending' : ''}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                  <span className="spoken-answer-name">{answer.name}</span>
+                  {answer.pending ? <span className="spoken-answer-text">Listening…</span> : <span className="spoken-answer-text">“{answer.text}”</span>}
+                </motion.div>
+              )}
             </div>
+
+            {canAct && !isDuel && card.answerable && mic && (
+              <button
+                type="button"
+                className={`mic-btn mic-${mic.state}`}
+                disabled={mic.state === 'sending' || mic.state === 'blocked'}
+                onPointerDown={(e) => {
+                  e.preventDefault()
+                  mic.onStart()
+                }}
+                onPointerUp={mic.onStop}
+                onPointerLeave={() => mic.state === 'recording' && mic.onStop()}
+                onPointerCancel={mic.onStop}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <span className="mic-dot" />
+                {mic.state === 'recording' ? 'Release to send' : mic.state === 'sending' ? 'Hearing you…' : mic.state === 'blocked' ? 'Mic blocked' : 'Hold to answer'}
+              </button>
+            )}
 
             {canAct ? (
               <div className="verdict-row">

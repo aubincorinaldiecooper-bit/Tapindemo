@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { avatarsList } from './data'
 import type { Mode } from './game'
 import { GameScreen, PunishmentOverlay } from './components/GameScreen'
-import { CheckoutModal, HostModal, JoinModal, RecapModal, RoomLobbyModal, StoreModal, type Player, type ProofPhoto } from './components/Modals'
+import { micSupported, useAnswerRecorder } from './answer'
+import { CheckoutModal, HostModal, JoinModal, RecapModal, RoomLobbyModal, StoreModal, type Player, type ProofPhoto, type SpokenAnswer } from './components/Modals'
 import { ProofCameraModal } from './components/ProofCamera'
 import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
@@ -29,6 +30,8 @@ export default function App() {
     return saved ? { name: saved.name, avatar: saved.avatar || avatarsList[0] } : { name: 'Player', avatar: avatarsList[0] }
   })
   const [photos, setPhotos] = useState<ProofPhoto[]>([])
+  const [answers, setAnswers] = useState<SpokenAnswer[]>([])
+  const lastAnswerCard = useRef<number | null>(null)
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
@@ -46,6 +49,12 @@ export default function App() {
     },
     // The server owns the game phase; mirror it into the screen as updates arrive.
     (st) => {
+      const a = st.answer
+      if (a && !a.pending && st.card && lastAnswerCard.current !== st.card.id) {
+        lastAnswerCard.current = st.card.id
+        const player = st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone'
+        setAnswers((prev) => [{ player, card: st.card!.text, text: a.text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }, ...prev])
+      }
       if (st.phase === 'game') {
         setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
         setScreen('game')
@@ -72,6 +81,18 @@ export default function App() {
   const iAmIn = !!duel && !!meId && duel.players.includes(meId)
   const video = useDuelVideo(screen === 'game' && !!duel, state?.card?.id ?? 0, iAmIn, room.duelToken)
   const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? 'Someone'
+
+  const sendAnswer = useCallback(
+    async (wav: ArrayBuffer) => {
+      const cardId = room.state?.card?.id
+      if (!cardId) return
+      const r = await room.answerAudio(cardId, wav)
+      if (!r.ok) toast(r.error)
+    },
+    [room, toast]
+  )
+  const recorder = useAnswerRecorder(sendAnswer)
+  const spoken = state?.answer ? { name: nameOf(state.answer.playerId), text: state.answer.text, pending: state.answer.pending } : null
 
   const confirmPurchase = () => {
     setUnlocked(true)
@@ -138,6 +159,8 @@ export default function App() {
             isMyTurn={isMyTurn}
             turnName={turnPlayer?.name ?? 'Someone'}
             duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
+            answer={spoken}
+            mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => void recorder.start(), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
@@ -201,7 +224,7 @@ export default function App() {
           toast('📸 Dare proof added to Party Recap!')
         }}
       />
-      <RecapModal open={modal === 'recap'} photos={photos} onClose={() => setModal(null)} />
+      <RecapModal open={modal === 'recap'} photos={photos} answers={answers} onClose={() => setModal(null)} />
       <PunishmentOverlay
         text={state?.punishment?.text ?? null}
         playerName={punished?.name ?? 'Someone'}

@@ -18,6 +18,13 @@ export interface ProofPhoto {
   time: string
 }
 
+export interface SpokenAnswer {
+  player: string
+  card: string
+  text: string
+  time: string
+}
+
 export function StoreModal({ open, inert, onClose, onUnlock }: { open: boolean; inert?: boolean; onClose: () => void; onUnlock: () => void }) {
   return (
     <Modal open={open} inert={inert}>
@@ -251,7 +258,7 @@ export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel,
   )
 }
 
-export function RecapModal({ open, photos, onClose }: { open: boolean; photos: ProofPhoto[]; onClose: () => void }) {
+export function RecapModal({ open, photos, answers = [], onClose }: { open: boolean; photos: ProofPhoto[]; answers?: SpokenAnswer[]; onClose: () => void }) {
   return (
     <Modal open={open} zIndex={2400}>
       <div className="flex justify-between items-center mb-3">
@@ -288,6 +295,20 @@ export function RecapModal({ open, photos, onClose }: { open: boolean; photos: P
           ))
         )}
       </motion.div>
+      {answers.length > 0 && (
+        <div className="recap-answers mb-3">
+          {answers.map((a, i) => (
+            <div key={i} className="recap-answer">
+              <div className="recap-answer-card">{a.card}</div>
+              <div className="recap-answer-text">“{a.text}”</div>
+              <div className="recap-answer-meta">
+                <span>{a.player}</span>
+                <span>{a.time}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <Pressable onClick={onClose} className="w-full btn-primary text-sm py-2.5">
         Close
       </Pressable>
