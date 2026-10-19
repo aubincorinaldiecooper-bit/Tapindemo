@@ -1,0 +1,1534 @@
+{
+ "classicCards": [
+  {
+   "text": "What's the most recent lie you told to get out of plans?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who was the last person you stalked on Instagram?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the pettiest reason you've unfollowed someone?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a text you regret sending this year?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room would you call to help you move a body (hypothetically)?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the longest you've left someone on read on purpose?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most embarrassing autocorrect moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst thing you've said about someone in a group chat?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who's the last person you muted and why?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most unhinged 3 a.m. purchase?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would you least want to be stuck in an elevator with?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward thing you've done on a date?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which friend do you secretly think is a bad influence?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a lie you tell your parents regularly?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most money you've wasted on something dumb?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Have you ever faked being sick to skip something? What was it?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most embarrassing search history entry this month?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room has the worst taste in music?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst habit that your friends know about?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What was your most cringe phase, and is there photo proof?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing thing you've done to impress someone?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who did you text last and what did it say?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a secret you kept from your best friend?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most dramatic breakup text?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would you trust least with a secret?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the weirdest DM you've ever received?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst gift you've ever given?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the longest you've gone without showering?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a rumor you've started or spread?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who's the most annoying person in your contacts?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the dumbest reason you've cried this year?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Have you ever snooped through someone's phone? Find anything?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a trend you did and now deeply regret?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would you not let babysit your pet?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing thing you've posted and deleted?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most toxic dating app habit?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst excuse you've used to cancel?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's one thing you've stolen (small counts)?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who have you pretended to like for the sake of the group?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the biggest overreaction you've had this month?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a thing you do that you'd be embarrassed if people saw?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would be the worst roommate?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing nickname someone has for you?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst thing you've eaten off the floor?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your guilty pleasure show?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward encounter you've had with an ex?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room would you prank first?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most recent 'I can't believe I did that' story?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst photo of you that still exists online?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player is most likely to cancel last minute?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the longest you've worn the same outfit?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst 'I thought I was on mute' moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing playlist you have?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player do you think lies the most in this game?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most childish thing you still do?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a crush you had that makes zero sense now?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst 'reply all' or wrong-chat moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most embarrassing injury story?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a time you got caught doing something you shouldn't?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who's the last person you cried in front of?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst tipping moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Have you ever ghosted a friend? What happened?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing thing your parents have caught you doing?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room would you prank-call right now?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the biggest lie on your dating profile?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the weirdest thing you've done for a TikTok?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a secret talent nobody here knows about?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the pettiest argument you've won?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room has the most embarrassing Spotify history?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a thing you've pretended to know about to seem cool?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward message you've sent to a group chat by mistake?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst fake-laugh moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a story you tell that's slightly exaggerated every time?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward thing that's happened to you at work or school?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who would you swap phones with for a day and why?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a time you were jealous of a friend?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst thing you've done while hungover?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the dumbest fight you've had with a sibling?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most embarrassing thing in your Notes app?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who was your worst kiss and what made it bad?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most desperate thing you've done for attention online?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the biggest 'main character syndrome' moment you've had?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would be worst at keeping a surprise party secret?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the longest you've gone without replying to your mom?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most ridiculous thing you've argued about in a relationship?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room owes you money or a favor?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most embarrassing voice note?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a time you pretended to be busy but were in bed?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's a thing you've done drunk that you'd never do sober?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your worst 'liked an old photo by accident' story?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Which player would you least want to see your search history?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward thing you've said to a stranger?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Have you ever lied about your age? Which way?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the biggest fib you've told on a date?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most embarrassing fan moment?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the worst thing you've done to a roommate?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Who in this room would you trust least to drive you home?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the most awkward FaceTime you've had?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's the strangest compliment you've received?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "What's your most frequent 'oops' text?",
+   "type": "question",
+   "spice": "Mild"
+  },
+  {
+   "text": "Send the 5th person in your recents a single 'hey' and don't follow up.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent emoji usage, top 5.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do your best impression of the host.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the player to your left pick your profile pic for the next hour.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Post an unflattering selfie to your close friends with no caption.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Swap seats with whoever you find most attractive here.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your lock screen and home screen.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Text your mom 'love you' with no context and show the reply.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let someone read your most recent Google search out loud.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do the Griddy or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group the last photo you took.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Give a 20-second speech about why the person to your right is iconic.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group pick a song and lip-sync the chorus.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Call the 3rd contact in your phone and say 'guess what' then hang up.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show your most-played Spotify song this month.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do 10 pushups or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group look at your Instagram following list for 15 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Say your most-used phrase in your 'customer service voice'.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Pick someone to compliment with full eye contact for 10 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent screenshot.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group rename one contact in your phone.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Reply to the last Instagram story you saw with a fire emoji.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Describe your last date in three words.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your Spotify Wrapped top artist or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Talk in a British accent until your next turn.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group pick a filter and take a selfie with it, keep it.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent 'Memories' notification photo.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Switch drinks with the player to your left for one round.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do a dramatic reading of the last text you received.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Post a poll to your story: 'should I text them?'. Follow the result later.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Rate the host's outfit out of 10, honestly.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your screen time for today.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Act out your morning routine in 15 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group write a story caption and post it (SFW).",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Hum a song; first to guess gives you a sip to hand out.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Text your best friend 'I have tea' and don't explain for 10 minutes.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Say three nice things about the person across from you.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group a photo from exactly one year ago.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Give everyone here a celebrity lookalike.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do your walk-in entrance like it's a music video.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group pick a song for your story and post it.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Make the person to your right laugh in 15 seconds or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent Snapchat or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Read your latest Notes app note title (not the content).",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Hold a conversation with the host as a pirate for one round.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do a 10-second TikTok transition with the person to your left.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Share your most used app and defend it.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most liked Instagram post.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Give the player across from you a new nickname; everyone uses it tonight.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Post your drink to your story with the caption 'tap in'.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let someone scroll your TikTok For You page for 15 seconds and judge you.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Tell the group your go-to pickup line and deliver it to someone here.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your current Uber rating.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do a yoga pose of the group's choice and hold it for 20 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Say the first thing you'd buy with a million dollars, no thinking.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent Venmo payment description.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group choose your next drink.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do your best 'influencer apology video' for 15 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent liked TikTok.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Act like you just won an award and thank everyone in the room.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Text the group chat 'who's awake' and show the first reply.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the player to your right scroll your camera roll for 10 seconds.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Give a weather report on the vibe of the room.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show your most recent calendar event.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do your best runway walk across the room.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Pick a player; you two do a 5-second handshake you invent on the spot.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Say the alphabet backwards or take a sip.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your Spotify 'On Repeat' playlist top 3.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group choose who you follow next on Instagram.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Speak only in questions until your next turn.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Post a story of the person to your left with the caption the group picks (SFW).",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group the last person you FaceTimed.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do 15 squats while saying the host's name every rep.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the group text one emoji to your last match.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent story view count.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Explain your most recent screenshot to the group.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Say something you've never said out loud about someone here, nice only.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Show the group your most recent emoji reaction in iMessage.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Do a 10-second dance to no music.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Let the person across from you post anything SFW to your close friends.",
+   "type": "dare",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've checked your phone in the last 2 minutes.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever rewatched your own story.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've texted 'omw' while still in bed.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've left the group chat on read today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip for every dating app on your phone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've screenshotted a conversation this week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your phone is under 20% right now.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've liked your own post.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've googled yourself.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'I'm not drinking tonight' tonight.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever posted a thirst trap.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have more than 500 unread emails.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've watched a show just because someone hot was in it.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've pretended to text to avoid someone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your screen time is over 5 hours today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've fallen asleep on a FaceTime.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've bought something from a TikTok ad.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever been late to this exact friend group.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've sent a voice note longer than a minute.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you know your ex's current location roughly.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've replayed a voice note to hear how you sound.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever used 'lol' to soften bad news.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip for every person you've texted today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've cried at a TikTok.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've had a crush on someone in this room.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ghosted a group chat for over a week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever pretended to know a song.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've worn the same thing two days in a row this week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've screenshotted someone's story.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'bet' today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a playlist for a specific person.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've posted and deleted within 10 minutes.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you check who viewed your story.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever liked a post from years ago by mistake.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your camera roll has over 10,000 photos.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used a 'Close Friends' story to be petty.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've canceled plans to stay in with your phone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been on a date you found through a friend's story.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've 'accidentally' texted your ex.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever gotten a parking ticket.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've sent a text and immediately turned your phone over.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've matched with someone you knew.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you own more than 3 pairs of the same shoe.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever faked a laugh at the host's joke.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have an unfinished book on your nightstand.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever argued with a stranger online.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used a filter today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've watched someone's story and not liked their post on purpose.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a notification badge over 99.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been to the same restaurant 3 times this month.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've pretended to be asleep to avoid talking.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your Spotify has a 'sad' playlist.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've liked someone's photo to get their attention.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've soft-launched anyone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've lied about where you were tonight.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your phone has autocorrected something embarrassing this week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've posted a gym selfie.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've waited an hour to reply to seem busy.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you own a ring light.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've left a party without saying goodbye.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've missed a flight or a train.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip for every ex you still follow.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a Pinterest board for your future wedding.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever pretended your phone died.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you know the host's Wi-Fi password by heart.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used ChatGPT to write a text.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your last photo is a selfie.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been on BeReal today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you own a Stanley cup or an Owala.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'slay' unironically this week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've stayed up past 3 a.m. this week for no reason.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your Spotify has a playlist named after a vibe.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever looked at a crush's tagged photos.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been 'on your way' for over 30 minutes before.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have an app you haven't opened in a year.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've posted a story just for one person to see.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've screenshotted a text to send to your friends for analysis.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a group chat named something unhinged.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever pretended to like a gift.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been the last one awake in a group chat.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've changed outfits more than twice before coming here.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used 'no worries if not' in a text.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've cried over a TV character this year.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've 'accidentally' liked an ex's new partner's post.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'we should hang out soon' and never followed up.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've posted a Spotify Wrapped story.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have more than one alarm set every morning.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ordered food while there's food in your fridge.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've googled 'how to respond to' something this month.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever ended a text with a period to be petty.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a saved folder of memes to send later.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've pretended to have plans to avoid plans.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used a fake name at a coffee shop.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've taken a mirror selfie in a public bathroom.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've rewatched the same show more than three times.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you own something you bought for a photo and never wore again.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been in a group chat planning a trip that never happened.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your most-used app surprised you this week.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've sent a text to the wrong person this month.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever fallen for an influencer's product.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your bank app is on your home screen.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used an emoji to avoid answering a question.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'I'll start Monday' this month.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a screenshot of a text as proof of something.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've watched a whole series in one weekend.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've checked your ex's Spotify activity.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've used 'lowkey' in the last hour.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your phone case is cracked right now.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've taken a photo of your food tonight.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've rehearsed a text out loud before sending it.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've skipped a song because it reminded you of someone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've ever faked an accent for fun in public.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've pretended to understand a reference.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been 'five minutes away' for twenty minutes.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you own merch from an artist you no longer listen to.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your Notes app has a list about someone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've screenshotted your own text to admire it.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've worn sunglasses indoors this year.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've shown up to something just for the free food.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you have a draft tweet or caption you never posted.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've pretended to be on a call to avoid someone.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if your most-played song is about heartbreak.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've said 'that's so me' to a meme today.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've had the same profile picture for over a year.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've liked a post and then unliked it right away.",
+   "type": "sip",
+   "spice": "Mild"
+  },
+  {
+   "text": "Take a sip if you've been added to a group chat you never wanted.",
+   "type": "sip",
+   "spice": "Mild"
+  }
+ ]
+}
