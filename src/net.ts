@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import type { Mode } from './game'
-import type { ClientToServer, JoinAck, RoomState, ServerToClient, Verdict } from './protocol'
+import type { ClientToServer, DuelAccess, JoinAck, RoomState, ServerToClient, Verdict } from './protocol'
 
 export const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:8787'
 
@@ -123,13 +123,22 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
   const startGame = useCallback(() => socketRef.current?.emit('start_game'), [])
   const verdict = useCallback((v: Verdict) => socketRef.current?.emit('verdict', v), [])
   const punishmentDone = useCallback(() => socketRef.current?.emit('punishment_done'), [])
+  const duelToken = useCallback(
+    () =>
+      new Promise<DuelAccess | null>((resolve) => {
+        const s = socketRef.current
+        if (!s) return resolve(null)
+        s.emit('duel_token', (r) => resolve(r.ok ? r.access : null))
+      }),
+    [],
+  )
   const leaveRoom = useCallback(() => {
     socketRef.current?.emit('leave_room')
     rememberParty(null)
     setState(null)
   }, [])
 
-  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, leaveRoom }
+  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, duelToken, leaveRoom }
 }
 
 const secondsUntil = (deadline: number) => Math.max(0, Math.ceil((deadline - Date.now()) / 1000))

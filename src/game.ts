@@ -1,7 +1,7 @@
 import { betchuDareCards, classicCards, shotOClockCards, wildCardsList } from './data'
 
 export type Mode = 'classic' | 'betchu'
-export type CardKind = 'classic' | 'betchu' | 'shotoclock' | 'wildcard'
+export type CardKind = 'classic' | 'betchu' | 'shotoclock' | 'wildcard' | 'duel'
 
 export interface DrawnCard {
   id: number
@@ -18,8 +18,14 @@ let drawCounter = 0
 const spiceClassFor = (spice: string) =>
   spice === 'Wild' ? 'spice-wild' : spice === 'Spicy' ? 'spice-spicy' : spice === 'Icebreaker' ? 'spice-icebreaker' : 'spice-mild'
 
-export function drawCard(mode: Mode, first = false): DrawnCard {
+export function drawCard(mode: Mode, first = false, allowDuel = false, duelChance = 0.12): DrawnCard {
   const id = ++drawCounter
+  // Head-to-head: two players get the same dare on live video. ~12% of draws once the party has 2+ phones.
+  if (allowDuel && !first && Math.random() < duelChance) {
+    const pool = mode === 'betchu' ? betchuDareCards : classicCards.filter((c) => c.spice !== 'Icebreaker').map((c) => c.text)
+    const text = pool[Math.floor(Math.random() * pool.length)]
+    return { id, index: 0, kind: 'duel', text, spiceLabel: 'HEAD TO HEAD', spiceClass: 'spice-duel', isIcebreaker: false }
+  }
   const pool = first || mode === 'classic' ? classicCards.length : betchuDareCards.length
   const index = Math.floor(Math.random() * pool)
 

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useRef } from 'react'
+import { useRef, type RefObject } from 'react'
+import type { DuelStatus } from '../duel'
 import type { DrawnCard, Mode } from '../game'
 import type { Player } from './Modals'
 import { Pressable } from './ui'
@@ -11,6 +12,7 @@ interface Props {
   user: Player
   isMyTurn: boolean
   turnName: string
+  duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
   onComplete: () => void
   onSnitch: () => void
@@ -19,23 +21,26 @@ interface Props {
   onTapOut: () => void
 }
 
-export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
   const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
+  const isDuel = card.kind === 'duel' && !!duel
+  const canAct = isDuel ? duel!.iAmIn && !duel!.iAmDone : isMyTurn
   const urgent = timeLeft <= 10
 
   const cardClasses = [
     isBetchu && 'betchu-active-card',
     isWildcard && 'wildcard-active-card',
     isShotOClock && 'shotoclock-active-card',
+    isDuel && 'duel-active-card',
     card.isIcebreaker && 'icebreaker-active-card',
   ]
     .filter(Boolean)
     .join(' ')
 
-  const badge = isBetchu ? "I BETCHU WON'T EDITION" : isShotOClock ? "SHOT O'CLOCK CARD" : isWildcard ? 'WILDCARD' : 'ROUND ' + (card.index + 1)
+  const badge = isDuel ? 'HEAD TO HEAD' : isBetchu ? "I BETCHU WON'T EDITION" : isShotOClock ? "SHOT O'CLOCK CARD" : isWildcard ? 'WILDCARD' : 'ROUND ' + (card.index + 1)
 
   return (
     <motion.div
@@ -76,14 +81,14 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onH
             animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
             exit={{ opacity: 0, x: -80, rotate: -6, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            drag={isMyTurn ? 'x' : false}
+            drag={canAct ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.25}
             onDragStart={() => {
               dragged.current = true
             }}
             onDragEnd={(_, info) => {
-              if (!isMyTurn) return
+              if (!canAct) return
               if (info.offset.x > 110) onComplete()
               else if (info.offset.x < -110) onTapOut()
               setTimeout(() => {
@@ -112,6 +117,29 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onH
               </motion.div>
             </div>
 
+            {isDuel && (
+              <div className="duel-stage">
+                <div className="duel-names">
+                  <span>{duel!.names[0]}</span>
+                  <span className="duel-vs">vs</span>
+                  <span>{duel!.names[1]}</span>
+                </div>
+                <div className="duel-videos">
+                  {/* oxlint-disable-next-line react/refs -- ref objects are passed down as props, not read during render */}
+                  <video ref={duel!.remoteVideo} className="duel-video duel-video-remote" autoPlay playsInline />
+                  {/* oxlint-disable-next-line react/refs */}
+                  {duel!.iAmIn && <video ref={duel!.localVideo} className="duel-video duel-video-local" autoPlay playsInline muted />}
+                  {duel!.status !== 'live' && (
+                    <div className="duel-overlay">
+                      {duel!.status === 'connecting' && 'Connecting cameras…'}
+                      {duel!.status === 'no-camera' && 'Camera blocked — allow camera access to duel'}
+                      {duel!.status === 'error' && 'Video unavailable'}
+                      {duel!.status === 'idle' && 'Live video'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex flex-col items-center justify-center my-auto w-full px-2">
               {card.isIcebreaker && <div className="icebreaker-icon-glow">🧊</div>}
               <motion.span
@@ -138,7 +166,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onH
               </motion.div>
             </div>
 
-            {isMyTurn ? (
+            {canAct ? (
               <div className="verdict-row">
                 <Pressable className="btn-tapout-big verdict-decline" onClick={onTapOut}>
                   Tap out{isBetchu ? ' (−1 ❤️)' : ''}
@@ -150,7 +178,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onH
             ) : (
               <div className="turn-wait">
                 <span className="turn-wait-dot" />
-                {turnName}'s turn
+                {isDuel ? (duel!.iAmDone ? 'Waiting for your rival' : `${duel!.names[0]} vs ${duel!.names[1]}`) : `${turnName}'s turn`}
               </div>
             )}
           </motion.div>
@@ -163,7 +191,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, onH
           <Pressable className="action-chip-btn" onClick={onProof}>
             <span>📸</span> Proof
           </Pressable>
-          {isMyTurn && (
+          {isMyTurn && !isDuel && (
             <Pressable className="action-chip-btn" onClick={onNext}>
               <span>⏭️</span> Skip
             </Pressable>

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
+import { AccessToken } from 'livekit-server-sdk'
 import { Server } from 'socket.io'
 import { classicPunishmentsList } from '../../src/data'
 import { drawCard } from '../../src/game'
@@ -11,6 +12,12 @@ const MAX_AVATAR_CHARS = 200_000
 const DEFAULT_ORIGINS = 'https://aubincorinaldiecooper-bit.github.io,http://localhost:5173,http://127.0.0.1:5173'
 const origins = (process.env.CORS_ORIGINS ?? DEFAULT_ORIGINS).split(',').map((s) => s.trim())
 const PUNISHMENT_TIMEOUT_MS = 90_000
+const DUEL_TIME_FACTOR = 3
+const LIVEKIT_URL = process.env.LIVEKIT_URL ?? ''
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY ?? ''
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET ?? ''
+const duelsEnabled = !!(LIVEKIT_URL && LIVEKIT_API_KEY && LIVEKIT_API_SECRET)
+const DUEL_CHANCE = Number(process.env.DUEL_CHANCE ?? 0.12)
 
 const http = createServer((req, res) => {
   if (req.url === '/health') {
@@ -61,21 +68,56 @@ const clearTimer = (room: Room) => {
   room.timer = undefined
 }
 
+// Walk the seating order from the current player and stop at the next connected one,
+// so an absent player in the middle doesn't reset the order.
 const nextTurn = (room: Room) => {
   const s = room.state
-  const connected = s.players.filter((p) => p.connected)
-  if (connected.length === 0) return
-  const idx = connected.findIndex((p) => p.id === s.turnId)
-  s.turnId = connected[(idx + 1) % connected.length].id
+  const n = s.players.length
+  if (n === 0 || !s.players.some((p) => p.connected)) return
+  const start = s.players.findIndex((p) => p.id === s.turnId)
+  for (let step = 1; step <= n; step++) {
+    const candidate = s.players[(start + step) % n]
+    if (candidate.connected) {
+      s.turnId = candidate.id
+      return
+    }
+  }
 }
 
 const dealCard = (room: Room, first = false) => {
   const s = room.state
-  s.card = drawCard(s.mode, first)
-  s.deadline = Date.now() + s.cardSeconds * 1000
+  const connected = s.players.filter((p) => p.connected)
+  s.card = drawCard(s.mode, first, duelsEnabled && connected.length >= 2, DUEL_CHANCE)
   s.punishment = null
+  s.duel = null
+  let seconds = s.cardSeconds
+  if (s.card.kind === 'duel') {
+    const others = connected.filter((p) => p.id !== s.turnId)
+    const rival = others[Math.floor(Math.random() * others.length)]
+    s.duel = { players: [s.turnId!, rival.id], done: [] }
+    seconds = s.cardSeconds * DUEL_TIME_FACTOR
+  }
+  s.deadline = Date.now() + seconds * 1000
   clearTimer(room)
-  room.timer = setTimeout(() => tapOut(room), s.cardSeconds * 1000 + 250)
+  room.timer = setTimeout(() => (s.duel ? duelTimeout(room) : tapOut(room)), seconds * 1000 + 250)
+  broadcast(room)
+}
+
+// Time ran out on a head-to-head: whoever hasn't finished takes the punishment (first unfinished one).
+const duelTimeout = (room: Room) => {
+  const s = room.state
+  if (!s.duel || s.punishment) return
+  const slacker = s.duel.players.find((id) => !s.duel!.done.includes(id) && s.players.find((p) => p.id === id)?.connected)
+  if (!slacker) return advance(room)
+  punish(room, slacker)
+}
+
+const punish = (room: Room, playerId: string) => {
+  const s = room.state
+  clearTimer(room)
+  s.deadline = null
+  s.punishment = { playerId, text: classicPunishmentsList[Math.floor(Math.random() * classicPunishmentsList.length)] }
+  room.timer = setTimeout(() => advance(room), PUNISHMENT_TIMEOUT_MS)
   broadcast(room)
 }
 
@@ -85,11 +127,7 @@ const tapOut = (room: Room) => {
   clearTimer(room)
   // Nobody is there to take the punishment; don't block the table for an absent phone.
   if (!s.players.find((p) => p.id === s.turnId)?.connected) return advance(room)
-  s.deadline = null
-  s.punishment = { playerId: s.turnId, text: classicPunishmentsList[Math.floor(Math.random() * classicPunishmentsList.length)] }
-  // Nobody left to press Done (both punished player and host gone)? Move on by itself.
-  room.timer = setTimeout(() => advance(room), PUNISHMENT_TIMEOUT_MS)
-  broadcast(room)
+  punish(room, s.turnId)
 }
 
 const advance = (room: Room) => {
@@ -149,7 +187,7 @@ io.on('connection', (socket) => {
     const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
     const code = newCode()
     const room: Room = {
-      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null },
+      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -199,11 +237,36 @@ io.on('connection', (socket) => {
     if (!c) return
     const s = c.room.state
     if (s.phase !== 'game' || s.punishment) return
-    const isTurn = c.playerId === s.turnId
     const isHost = c.playerId === s.hostId
+    if (s.duel) {
+      const isDuelist = s.duel.players.includes(c.playerId)
+      if (v === 'skip' && isHost) return advance(c.room)
+      if (!isDuelist) return
+      if (v === 'tapout') return punish(c.room, c.playerId)
+      if (v === 'complete' && !s.duel.done.includes(c.playerId)) {
+        s.duel.done.push(c.playerId)
+        if (s.duel.done.length === 2) return advance(c.room)
+        broadcast(c.room)
+      }
+      return
+    }
+    const isTurn = c.playerId === s.turnId
     if (!isTurn && !isHost) return
     if (v === 'tapout') tapOut(c.room)
     else if (v === 'complete' || v === 'skip') advance(c.room)
+  })
+
+  socket.on('duel_token', async (ack) => {
+    const c = current()
+    if (!c) return ack({ ok: false, error: 'Not in a party' })
+    const s = c.room.state
+    if (!duelsEnabled) return ack({ ok: false, error: 'Video is not configured' })
+    const duelist = !!s.duel?.players.includes(c.playerId)
+    const player = s.players.find((p) => p.id === c.playerId)
+    const roomName = `tapin-${s.code}`
+    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, { identity: c.playerId, name: player?.name, ttl: '20m' })
+    at.addGrant({ roomJoin: true, room: roomName, canPublish: duelist, canSubscribe: true, canPublishData: false })
+    ack({ ok: true, access: { url: LIVEKIT_URL, token: await at.toJwt(), room: roomName } })
   })
 
   socket.on('punishment_done', () => {
