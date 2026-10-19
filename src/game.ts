@@ -24,7 +24,7 @@ export function drawCard(mode: Mode, first = false, allowDuel = false, duelChanc
   const id = ++drawCounter
   // Head-to-head: two players get the same dare on live video. ~12% of draws once the party has 2+ phones.
   if (allowDuel && !first && Math.random() < duelChance) {
-    const pool = mode === 'betchu' ? betchuDareCards : classicCards.filter((c) => c.spice !== 'Icebreaker').map((c) => c.text)
+    const pool = mode === 'betchu' ? betchuDareCards : classicCards.filter((c) => c.spice !== 'Icebreaker' && c.type === 'dare').map((c) => c.text)
     const text = pool[Math.floor(Math.random() * pool.length)]
     return { id, index: 0, kind: 'duel', text, spiceLabel: 'HEAD TO HEAD', spiceClass: 'spice-duel', isIcebreaker: false, answerable: false }
   }

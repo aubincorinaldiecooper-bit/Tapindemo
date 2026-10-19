@@ -30,8 +30,8 @@ export default function App() {
     return saved ? { name: saved.name, avatar: saved.avatar || avatarsList[0] } : { name: 'Player', avatar: avatarsList[0] }
   })
   const [photos, setPhotos] = useState<ProofPhoto[]>([])
+  // Mirror of the server's per-party answer log, kept after leaving so the Recap still shows it.
   const [answers, setAnswers] = useState<SpokenAnswer[]>([])
-  const lastAnswerCard = useRef<number | null>(null)
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
@@ -49,11 +49,12 @@ export default function App() {
     },
     // The server owns the game phase; mirror it into the screen as updates arrive.
     (st) => {
-      const a = st.answer
-      if (a && !a.pending && st.card && lastAnswerCard.current !== st.card.id) {
-        lastAnswerCard.current = st.card.id
-        const player = st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone'
-        setAnswers((prev) => [{ player, card: st.card!.text, text: a.text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }, ...prev])
+      if (st.answers.length) {
+        setAnswers(
+          st.answers
+            .map((a) => ({ player: st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone', card: a.card, text: a.text }))
+            .reverse()
+        )
       }
       if (st.phase === 'game') {
         setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
@@ -82,10 +83,9 @@ export default function App() {
   const video = useDuelVideo(screen === 'game' && !!duel, state?.card?.id ?? 0, iAmIn, room.duelToken)
   const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? 'Someone'
 
+  // cardId is the card that was showing when the player pressed the mic, not whatever is showing on release.
   const sendAnswer = useCallback(
-    async (wav: ArrayBuffer) => {
-      const cardId = room.state?.card?.id
-      if (!cardId) return
+    async (wav: ArrayBuffer, cardId: number) => {
       const r = await room.answerAudio(cardId, wav)
       if (!r.ok) toast(r.error)
     },
@@ -160,7 +160,7 @@ export default function App() {
             turnName={turnPlayer?.name ?? 'Someone'}
             duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
             answer={spoken}
-            mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => void recorder.start(), onStop: () => void recorder.stop() } : null}
+            mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
