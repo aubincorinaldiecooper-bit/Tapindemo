@@ -141,15 +141,15 @@ export default function App() {
             onHome={leaveGame}
             onComplete={() => {
               toast('✨ Action completed successfully!')
-              room.verdict('complete', state.card.id)
+              room.verdict('complete', state.card!.id)
             }}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
             onNext={() => {
               toast('⏭️ Passing to next player!')
-              room.verdict('skip', state.card.id)
+              room.verdict('skip', state.card!.id)
             }}
-            onTapOut={() => room.verdict('tapout', state.card.id)}
+            onTapOut={() => room.verdict('tapout', state.card!.id)}
           />
         )}
       </AnimatePresence>
