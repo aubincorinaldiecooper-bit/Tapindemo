@@ -191,7 +191,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
           <Pressable className="action-chip-btn" onClick={onProof}>
             <span>📸</span> Proof
           </Pressable>
-          {isMyTurn && (
+          {isMyTurn && !isDuel && (
             <Pressable className="action-chip-btn" onClick={onNext}>
               <span>⏭️</span> Skip
             </Pressable>
