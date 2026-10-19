@@ -24,6 +24,8 @@ export interface RoomState {
   duel: { players: [string, string]; done: string[] } | null
   // Spoken answer to the current card (Phonon transcript). `text` is empty while transcription is in flight.
   answer: { playerId: string; text: string; pending: boolean } | null
+  // Every completed spoken answer this party, one per card (re-recording replaces). Survives reloads; feeds the Recap.
+  answers: { cardId: number; playerId: string; card: string; text: string }[]
   answersEnabled: boolean
 }
 
