@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import type { Mode } from './game'
-import type { ClientToServer, RoomState, ServerToClient, Verdict } from './protocol'
+import type { ClientToServer, JoinAck, RoomState, ServerToClient, Verdict } from './protocol'
 
 export const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:8787'
 
@@ -46,12 +46,12 @@ export function shareLinkFor(code: string) {
   return `${window.location.origin}${import.meta.env.BASE_URL}?room=${code}`
 }
 
-type Ack = { ok: true; state: RoomState } | { ok: false; error: string }
 type RoomSocket = Socket<ServerToClient, ClientToServer>
 
 export function useRoom(onClosed: (reason: string) => void, onState: (state: RoomState) => void) {
   const socketRef = useRef<RoomSocket | null>(null)
   const [state, setState] = useState<RoomState | null>(null)
+  const [me, setMe] = useState<string | null>(null)
   const [connected, setConnected] = useState(false)
   const closedRef = useRef(onClosed)
   const stateRef = useRef(onState)
@@ -72,7 +72,10 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
       // A dropped socket (screen lock, network blip) lands here again; take our seat back.
       const saved = savedParty()
       if (saved) s.emit('join_room', { playerId: getPlayerId(), code: saved.code, name: saved.name, avatar: saved.avatar }, (r) => {
-        if (r.ok) apply(r.state)
+        if (r.ok) {
+          setMe(r.me)
+          apply(r.state)
+        }
         else {
           rememberParty(null)
           setState(null)
@@ -95,14 +98,15 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
 
   const call = useCallback(
     <E extends 'create_room' | 'join_room'>(event: E, payload: Parameters<ClientToServer[E]>[0]) =>
-      new Promise<Ack>((resolve) => {
+      new Promise<JoinAck>((resolve) => {
         const s = socketRef.current
         if (!s) return resolve({ ok: false, error: 'Not connected' })
         const t = window.setTimeout(() => resolve({ ok: false, error: "Couldn't reach the party server" }), 6000)
-        ;(s.emit as (ev: E, p: typeof payload, ack: (r: Ack) => void) => void)(event, payload, (r) => {
+        ;(s.emit as (ev: E, p: typeof payload, ack: (r: JoinAck) => void) => void)(event, payload, (r) => {
           window.clearTimeout(t)
           if (r.ok) {
             rememberParty({ code: r.state.code, name: payload.name, avatar: payload.avatar })
+            setMe(r.me)
             apply(r.state)
           }
           resolve(r)
@@ -125,7 +129,7 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
     setState(null)
   }, [])
 
-  return { state, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, leaveRoom }
+  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, leaveRoom }
 }
 
 const secondsUntil = (deadline: number) => Math.max(0, Math.ceil((deadline - Date.now()) / 1000))

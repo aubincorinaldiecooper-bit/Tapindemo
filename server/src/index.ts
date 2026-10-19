@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { classicPunishmentsList } from '../../src/data'
@@ -45,8 +46,10 @@ const newCode = () => {
   }
 }
 
+const publicId = (secret: string) => createHash('sha256').update(secret).digest('base64url').slice(0, 12)
+
 const cleanProfile = (p: Profile) => ({
-  playerId: String(p.playerId ?? '').slice(0, 64),
+  playerId: publicId(String(p.playerId ?? '').slice(0, 64)),
   name: String(p.name ?? '').trim().slice(0, 16) || 'Player',
   avatar: typeof p.avatar === 'string' && p.avatar.length <= MAX_AVATAR_CHARS && /^data:image\/(jpeg|png|webp|svg\+xml);/.test(p.avatar) ? p.avatar : '',
 })
@@ -80,6 +83,8 @@ const tapOut = (room: Room) => {
   const s = room.state
   if (s.phase !== 'game' || !s.turnId || s.punishment) return
   clearTimer(room)
+  // Nobody is there to take the punishment; don't block the table for an absent phone.
+  if (!s.players.find((p) => p.id === s.turnId)?.connected) return advance(room)
   s.deadline = null
   s.punishment = { playerId: s.turnId, text: classicPunishmentsList[Math.floor(Math.random() * classicPunishmentsList.length)] }
   // Nobody left to press Done (both punished player and host gone)? Move on by itself.
@@ -90,11 +95,6 @@ const tapOut = (room: Room) => {
 const advance = (room: Room) => {
   nextTurn(room)
   dealCard(room)
-}
-
-const isSocketOf = (code: string, playerId: string, socketId: string) => {
-  const ref = socketRoom.get(socketId)
-  return !!ref && ref.code === code && ref.playerId === playerId
 }
 
 const detach = (socketId: string, explicit: boolean) => {
@@ -108,10 +108,10 @@ const detach = (socketId: string, explicit: boolean) => {
   if (!player) return
   // The same player may be connected from a second tab; only mark away when the last socket is gone.
   const stillConnected = [...socketRoom.values()].some((r) => r.code === s.code && r.playerId === ref.playerId)
-  if (explicit && s.phase === 'lobby') s.players = s.players.filter((p) => p.id !== ref.playerId)
-  else if (!stillConnected) player.connected = false
   io.sockets.sockets.get(socketId)?.leave(s.code)
-  if (stillConnected) return broadcast(room)
+  if (stillConnected) return
+  if (explicit && s.phase === 'lobby') s.players = s.players.filter((p) => p.id !== ref.playerId)
+  else player.connected = false
   if (s.players.every((p) => !p.connected)) room.emptySince = Date.now()
   if (s.hostId === ref.playerId) {
     if (explicit && s.phase === 'lobby') {
@@ -154,7 +154,7 @@ io.on('connection', (socket) => {
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
     socket.join(code)
-    ack({ ok: true, state: room.state })
+    ack({ ok: true, state: room.state, me: prof.playerId })
   })
 
   socket.on('join_room', (p, ack) => {
@@ -162,13 +162,12 @@ io.on('connection', (socket) => {
     const code = String(p.code ?? '').replace(/\D/g, '').slice(0, 4)
     const room = rooms.get(code)
     if (!room) return ack({ ok: false, error: 'No party with that code' })
-    const prev = socketRoom.get(socket.id)
-    if (prev && prev.code !== code) detach(socket.id, false)
     const s = room.state
     const existing = s.players.find((pl) => pl.id === prof.playerId)
-    if (existing?.connected && existing.id === s.hostId && !isSocketOf(code, existing.id, socket.id)) {
-      return ack({ ok: false, error: 'The host is already in this party' })
-    }
+    if (!existing && s.phase !== 'lobby') return ack({ ok: false, error: 'That party already started' })
+    if (!existing && s.players.length >= 12) return ack({ ok: false, error: 'That party is full' })
+    const prev = socketRoom.get(socket.id)
+    if (prev && prev.code !== code) detach(socket.id, false)
     if (existing) {
       if (room.graceTimer && s.turnId === existing.id) {
         clearTimeout(room.graceTimer)
@@ -178,14 +177,12 @@ io.on('connection', (socket) => {
       existing.name = prof.name
       if (prof.avatar) existing.avatar = prof.avatar
     } else {
-      if (s.phase !== 'lobby') return ack({ ok: false, error: 'That party already started' })
-      if (s.players.length >= 12) return ack({ ok: false, error: 'That party is full' })
       s.players.push({ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true })
     }
     room.emptySince = undefined
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
     socket.join(code)
-    ack({ ok: true, state: s })
+    ack({ ok: true, state: s, me: prof.playerId })
     broadcast(room)
   })
 

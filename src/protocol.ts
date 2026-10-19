@@ -34,9 +34,12 @@ export interface Profile {
   avatar: string
 }
 
+// `playerId` is a private token that only its own browser knows; rooms expose a derived public `id`.
+export type JoinAck = { ok: true; state: RoomState; me: string } | { ok: false; error: string }
+
 export interface ClientToServer {
-  create_room: (p: Profile & { mode: Mode; seconds: number }, ack: (r: { ok: true; state: RoomState } | { ok: false; error: string }) => void) => void
-  join_room: (p: Profile & { code: string }, ack: (r: { ok: true; state: RoomState } | { ok: false; error: string }) => void) => void
+  create_room: (p: Profile & { mode: Mode; seconds: number }, ack: (r: JoinAck) => void) => void
+  join_room: (p: Profile & { code: string }, ack: (r: JoinAck) => void) => void
   leave_room: () => void
   start_game: () => void
   verdict: (v: Verdict) => void

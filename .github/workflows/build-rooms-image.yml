@@ -41,8 +41,13 @@ jobs:
           cache-to: type=gha,mode=max
       # Coolify only pulls the image; tell it a new one is ready.
       - name: Redeploy on Coolify
-        if: ${{ secrets.COOLIFY_DEPLOY_TOKEN != '' }}
+        env:
+          COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+          COOLIFY_ROOMS_APP_UUID: ${{ vars.COOLIFY_ROOMS_APP_UUID || 'eqpirhz186r5hozeensmoxw1' }}
         run: |
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_DEPLOY_TOKEN }}" \
-            "https://coolify.gnsis.studio/api/v1/deploy?uuid=${{ vars.COOLIFY_ROOMS_APP_UUID || 'knvyhz6hqnlgvtjcnaqx28um' }}&force=true"
+          if [ -z "$COOLIFY_DEPLOY_TOKEN" ]; then
+            echo "COOLIFY_DEPLOY_TOKEN secret not set; skipping redeploy (image is pushed)."
+            exit 0
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_DEPLOY_TOKEN" \
+            "https://coolify.gnsis.studio/api/v1/deploy?uuid=$COOLIFY_ROOMS_APP_UUID&force=true"

@@ -7,7 +7,7 @@ import { CheckoutModal, HostModal, JoinModal, RecapModal, RoomLobbyModal, StoreM
 import { ProofCameraModal } from './components/ProofCamera'
 import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
-import { getPlayerId, roomFromUrl, savedParty, useDeadline, useRoom } from './net'
+import { roomFromUrl, savedParty, useDeadline, useRoom } from './net'
 import { DEFAULT_TIMER, type TimerSeconds } from './protocol'
 
 type Screen = 'title' | 'lobby' | 'game'
@@ -16,7 +16,6 @@ type ModalName = 'store' | 'checkout' | 'host' | 'join' | 'room' | 'proof' | 're
 export default function App() {
   const [loading, setLoading] = useState(true)
   const [inviteCode] = useState(() => roomFromUrl())
-  const [meId] = useState(() => getPlayerId())
   // Arriving through a party link skips the title and opens Join with the code filled in.
   const [screen, setScreen] = useState<Screen>(() => (inviteCode || savedParty() ? 'lobby' : 'title'))
   const [modal, setModal] = useState<ModalName>(() => (inviteCode ? 'join' : null))
@@ -24,7 +23,10 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('classic')
   const [unlocked, setUnlocked] = useState(false)
   const [seconds, setSeconds] = useState<TimerSeconds>(DEFAULT_TIMER)
-  const [user, setUser] = useState<Player>({ name: 'Player', avatar: avatarsList[0] })
+  const [user, setUser] = useState<Player>(() => {
+    const saved = savedParty()
+    return saved ? { name: saved.name, avatar: saved.avatar || avatarsList[0] } : { name: 'Player', avatar: avatarsList[0] }
+  })
   const [photos, setPhotos] = useState<ProofPhoto[]>([])
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
@@ -53,6 +55,7 @@ export default function App() {
     },
   )
   const { state } = room
+  const meId = room.me
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoading(false), 1800)
@@ -176,7 +179,7 @@ export default function App() {
       <RoomLobbyModal
         open={modal === 'room'}
         state={state}
-        meId={meId}
+        meId={meId ?? ''}
         onStart={room.startGame}
         onLeave={() => {
           room.leaveRoom()
