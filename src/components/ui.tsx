@@ -21,15 +21,17 @@ interface ModalProps {
   children: ReactNode
   className?: string
   zIndex?: number
+  inert?: boolean
 }
 
-export function Modal({ open, children, className = '', zIndex }: ModalProps) {
+export function Modal({ open, children, className = '', zIndex, inert }: ModalProps) {
   return (
     <AnimatePresence>
       {open && (
         <motion.div
           className="modal-overlay"
           style={{ zIndex }}
+          inert={inert}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

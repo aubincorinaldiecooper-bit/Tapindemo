@@ -128,10 +128,11 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
+      <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
       <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
       <HostModal
         open={modal === 'host' || (modal === 'checkout' && checkoutFrom === 'host')}
+        inert={modal === 'checkout'}
         mode={mode}
         unlocked={unlocked}
         user={user}
