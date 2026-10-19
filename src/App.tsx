@@ -49,13 +49,11 @@ export default function App() {
     },
     // The server owns the game phase; mirror it into the screen as updates arrive.
     (st) => {
-      if (st.answers.length) {
-        setAnswers(
-          st.answers
-            .map((a) => ({ player: st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone', card: a.card, text: a.text }))
-            .reverse()
-        )
-      }
+      setAnswers(
+        st.answers
+          .map((a) => ({ player: st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone', card: a.card, text: a.text }))
+          .reverse()
+      )
       if (st.phase === 'game') {
         setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
         setScreen('game')
