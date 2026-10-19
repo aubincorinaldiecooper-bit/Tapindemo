@@ -84,6 +84,7 @@ export default function App() {
       <Toast message={toastMsg} />
       <AnimatePresence>{loading && <LoadingScreen key="loading" />}</AnimatePresence>
 
+      <div style={{ display: 'contents' }} inert={modal !== null}>
       <AnimatePresence mode="wait">
         {screen === 'title' && (
           <TitleScreen
@@ -127,6 +128,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+      </div>
 
       <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
       <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
