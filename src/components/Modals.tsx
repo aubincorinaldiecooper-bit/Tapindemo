@@ -1,7 +1,10 @@
-import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
+import { motion, useAnimationControls } from 'motion/react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import type { Mode } from '../game'
 import { AvatarPicker } from './AvatarPicker'
+import { avatarsList } from '../data'
+import { shareLinkFor } from '../net'
+import type { RoomState } from '../protocol'
 import { Modal, Pressable } from './ui'
 
 export interface Player {
@@ -103,7 +106,7 @@ interface HostProps {
   onMode: (mode: Mode) => void
   onLockedBetchu: () => void
   onCancel: () => void
-  onStart: () => void
+  onCreate: (name: string) => void
   toast: (msg: string) => void
 }
 
@@ -115,29 +118,13 @@ export function HostModal({ open, inert, ...props }: HostProps) {
   )
 }
 
-function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetchu, onCancel, onStart, toast }: Omit<HostProps, 'open' | 'inert'>) {
-  const [code, setCode] = useState<string | null>(null)
+function HostBody({ mode, unlocked, user, onAvatar, onMode, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
   const [nameInput, setNameInput] = useState('Host')
-
-  const generate = () => {
-    const trimmed = nameInput.trim()
-    if (trimmed) onName(trimmed)
-    setCode(Math.floor(1000 + Math.random() * 9000).toString())
-  }
-
-  const copy = () => {
-    if (!code) return
-    navigator.clipboard?.writeText(code)
-    toast('Room code copied: ' + code)
-  }
 
   return (
     <>
       <h2>Host Party Room</h2>
-      <AnimatePresence mode="wait" initial={false}>
-        {!code ? (
-          <motion.div key="setup" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <div className="form-cols">
+      <div className="form-cols">
             <div className="form-col form-col-profile">
             <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
@@ -159,65 +146,11 @@ function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetc
                 </motion.button>
               ))}
             </div>
-            <Pressable onClick={generate} className="btn-primary w-full text-base py-3">
-              Create Room Code
+            <Pressable onClick={() => onCreate(nameInput.trim())} className="btn-primary w-full text-base py-3">
+              Create Party Link
             </Pressable>
             </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div key="lobby" className="w-full" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-            <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2 mb-1">Room Code</div>
-            <div className="code-display flex justify-center">
-              {code.split('').map((d, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0, y: -24, rotateX: 90 }}
-                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                  transition={{ delay: i * 0.08, type: 'spring', stiffness: 400, damping: 18 }}
-                >
-                  {d}
-                </motion.span>
-              ))}
-            </div>
-            <Pressable
-              onClick={copy}
-              className="text-xs font-bold uppercase tracking-wider text-gray-300 bg-white/5 border border-white/10 px-4 py-2 rounded-lg mb-3"
-            >
-              Copy Code
-            </Pressable>
-            <div>
-              <div
-                className={
-                  mode === 'betchu'
-                    ? 'text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-lg inline-block mb-3'
-                    : 'text-xs font-bold uppercase tracking-wider text-gray-300 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block mb-3'
-                }
-              >
-                {mode === 'betchu' ? "Mode: 🔥 'I Betchu Won't' (3 Lives)" : 'Mode: Classic Tap In'}
-              </div>
-            </div>
-            <div className="text-xs font-semibold text-gray-300 mb-2">Players Joined:</div>
-            <div className="flex flex-col gap-2 mb-3">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-2.5"
-              >
-                <div className="flex items-center gap-2">
-                  <img src={user.avatar} className="w-8 h-8 rounded-full object-cover border border-orange-500" />
-                  <span className="font-bold text-sm text-white">{user.name} (Host)</span>
-                </div>
-                <span className="text-xs font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-500/30">Ready</span>
-              </motion.div>
-            </div>
-            <Pressable onClick={onStart} className="btn-primary w-full text-base py-3 mt-2">
-              Start Game 🚀
-            </Pressable>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <div className="flex flex-col gap-2 mt-2">
         <button type="button" onClick={onCancel} className="w-full text-gray-400 font-semibold text-sm py-2">
           Cancel
@@ -229,15 +162,16 @@ function HostBody({ mode, unlocked, user, onAvatar, onName, onMode, onLockedBetc
 
 interface JoinProps {
   open: boolean
+  initialCode: string | null
   user: Player
   onAvatar: (url: string) => void
-  onJoin: (name: string) => void
+  onJoin: (code: string, name: string) => void
   onCancel: () => void
   toast: (msg: string) => void
 }
 
-export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: JoinProps) {
-  const [digits, setDigits] = useState(['', '', '', ''])
+export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel, toast }: JoinProps) {
+  const [digits, setDigits] = useState(() => (initialCode ? initialCode.split('') : ['', '', '', '']))
   const [nameInput, setNameInput] = useState('Player')
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const shake = useAnimationControls()
@@ -258,7 +192,7 @@ export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: Joi
       shake.start({ x: [0, -10, 10, -8, 8, -4, 4, 0], transition: { duration: 0.45 } })
       return
     }
-    onJoin(nameInput.trim())
+    onJoin(digits.join(''), nameInput.trim())
   }
 
   return (
@@ -271,8 +205,9 @@ export function JoinModal({ open, user, onAvatar, onJoin, onCancel, toast }: Joi
       <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
       </div>
       <div className="form-col">
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Enter 4-Digit Pin</label>
-      <motion.div className="code-input-group mb-4" animate={shake}>
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">{initialCode ? 'Party' : 'Enter 4-Digit Pin'}</label>
+      {initialCode && <div className="join-invite">You're invited to party <b>{initialCode}</b></div>}
+      <motion.div className={`code-input-group mb-4 ${initialCode ? 'hidden' : ''}`} animate={shake}>
         {digits.map((d, i) => (
           <motion.input
             key={i}
@@ -346,6 +281,88 @@ export function RecapModal({ open, photos, onClose }: { open: boolean; photos: P
       <Pressable onClick={onClose} className="w-full btn-primary text-sm py-2.5">
         Close
       </Pressable>
+    </Modal>
+  )
+}
+
+interface RoomLobbyProps {
+  open: boolean
+  state: RoomState | null
+  meId: string
+  onStart: () => void
+  onLeave: () => void
+  toast: (msg: string) => void
+}
+
+export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: RoomLobbyProps) {
+  const isHost = !!state && state.hostId === meId
+  const share = async () => {
+    if (!state) return
+    const url = shareLinkFor(state.code)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Tap In', text: 'Join my Tap In party', url })
+        return
+      } catch {
+        /* user dismissed the share sheet */
+      }
+    }
+    await navigator.clipboard?.writeText(url)
+    toast('Party link copied')
+  }
+  return (
+    <Modal open={open && !!state}>
+      {state && (
+        <>
+          <h2>{isHost ? 'Your Party' : 'Party Lobby'}</h2>
+          <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2 mb-1">Party Code</div>
+          <div className="code-display flex justify-center">
+            {state.code.split('').map((d, i) => (
+              <motion.span key={i} initial={{ opacity: 0, y: -24, rotateX: 90 }} animate={{ opacity: 1, y: 0, rotateX: 0 }} transition={{ delay: i * 0.08, type: 'spring', stiffness: 400, damping: 18 }}>
+                {d}
+              </motion.span>
+            ))}
+          </div>
+          <Pressable onClick={share} className="btn-secondary w-full text-sm py-2.5 mb-3">
+            Share party link
+          </Pressable>
+          <div className="text-xs font-semibold text-gray-300 mb-2">
+            {state.players.length} {state.players.length === 1 ? 'player' : 'players'} · {state.mode === 'betchu' ? "🔥 I Betchu Won't" : '🎉 Classic'}
+          </div>
+          <div className="flex flex-col gap-2 mb-3 player-list">
+            {state.players.map((p) => (
+              <motion.div key={p.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-2.5">
+                <div className="flex items-center gap-2">
+                  <img src={p.avatar || avatarsList[0]} className="w-8 h-8 rounded-full object-cover border border-orange-500" />
+                  <span className="font-bold text-sm text-white">
+                    {p.name}
+                    {p.id === state.hostId ? ' (Host)' : ''}
+                    {p.id === meId ? ' · you' : ''}
+                  </span>
+                </div>
+                <span className={p.connected ? 'text-xs font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-500/30' : 'text-xs font-black text-gray-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10'}>
+                  {p.connected ? 'Ready' : 'Away'}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+          {isHost ? (
+            <Pressable onClick={onStart} className="btn-primary w-full text-base py-3 mt-2">
+              Start Game 🚀
+            </Pressable>
+          ) : (
+            <div className="turn-wait mt-2">
+              <span className="turn-wait-dot" />
+              Waiting for the host to start
+            </div>
+          )}
+          <div className="flex flex-col gap-2 mt-2">
+            <button type="button" onClick={onLeave} className="w-full text-gray-400 font-semibold text-sm py-2">
+              Leave party
+            </button>
+          </div>
+        </>
+      )}
     </Modal>
   )
 }

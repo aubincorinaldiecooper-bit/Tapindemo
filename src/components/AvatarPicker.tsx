@@ -1,6 +1,21 @@
 import { motion } from 'motion/react'
 import { useRef, type ChangeEvent } from 'react'
 
+const AVATAR_PX = 160
+
+// Camera photos are several MB; the avatar travels to every phone in the room, so shrink it first.
+async function shrinkToDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const side = Math.min(bitmap.width, bitmap.height)
+  const canvas = document.createElement('canvas')
+  canvas.width = AVATAR_PX
+  canvas.height = AVATAR_PX
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, AVATAR_PX, AVATAR_PX)
+  bitmap.close()
+  return canvas.toDataURL('image/jpeg', 0.82)
+}
+
 interface Props {
   selected: string
   onSelect: (url: string) => void
@@ -13,12 +28,10 @@ export function AvatarPicker({ selected, onSelect, onUploaded }: Props) {
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      onSelect(reader.result as string)
+    shrinkToDataUrl(file).then((url) => {
+      onSelect(url)
       onUploaded()
-    }
-    reader.readAsDataURL(file)
+    })
     e.target.value = ''
   }
 
