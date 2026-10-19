@@ -24,9 +24,9 @@ const PHONON_API_KEY = process.env.PHONON_API_KEY ?? ''
 const answersEnabled = !!PHONON_URL
 const MAX_ANSWER_BYTES = 700_000 // ~20 s of 16 kHz mono 16-bit WAV
 
-const transcribe = async (wav: ArrayBuffer): Promise<string> => {
+const transcribe = async (wav: Uint8Array): Promise<string> => {
   const form = new FormData()
-  form.append('file', new Blob([wav], { type: 'audio/wav' }), 'answer.wav')
+  form.append('file', new Blob([wav as BlobPart], { type: 'audio/wav' }), 'answer.wav')
   form.append('model', 'phonon-2')
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), 20_000)
@@ -291,14 +291,17 @@ io.on('connection', (socket) => {
     const s = c.room.state
     if (!answersEnabled) return ack({ ok: false, error: 'Voice answers are off' })
     if (s.phase !== 'game' || !s.card || s.card.id !== cardId || s.punishment || s.duel) return ack({ ok: false, error: 'That card is over' })
+    if (!s.card.answerable) return ack({ ok: false, error: 'This card is a dare, not a question' })
     if (c.playerId !== s.turnId) return ack({ ok: false, error: 'Not your turn' })
-    if (!(wav instanceof ArrayBuffer) || wav.byteLength < 1000) return ack({ ok: false, error: 'No audio' })
-    if (wav.byteLength > MAX_ANSWER_BYTES) return ack({ ok: false, error: 'Answer too long' })
+    // socket.io hands binary to Node as a Buffer; browsers send an ArrayBuffer.
+    const bytes = Buffer.isBuffer(wav) ? new Uint8Array(wav) : wav instanceof ArrayBuffer ? new Uint8Array(wav) : null
+    if (!bytes || bytes.byteLength < 1000) return ack({ ok: false, error: 'No audio' })
+    if (bytes.byteLength > MAX_ANSWER_BYTES) return ack({ ok: false, error: 'Answer too long' })
     s.answer = { playerId: c.playerId, text: '', pending: true }
     broadcast(c.room)
     let text = ''
     try {
-      text = await transcribe(wav)
+      text = await transcribe(bytes)
     } catch (e) {
       console.warn('transcription failed', (e as Error).message)
     }
