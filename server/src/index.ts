@@ -18,6 +18,32 @@ const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY ?? ''
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET ?? ''
 const duelsEnabled = !!(LIVEKIT_URL && LIVEKIT_API_KEY && LIVEKIT_API_SECRET)
 const DUEL_CHANCE = Number(process.env.DUEL_CHANCE ?? 0.12)
+// Phonon-2 (speech-to-text) for spoken card answers. OpenAI-compatible: POST /v1/audio/transcriptions.
+const PHONON_URL = (process.env.PHONON_URL ?? '').replace(/\/$/, '')
+const PHONON_API_KEY = process.env.PHONON_API_KEY ?? ''
+const answersEnabled = !!PHONON_URL
+const MAX_ANSWER_BYTES = 700_000 // ~20 s of 16 kHz mono 16-bit WAV
+
+const transcribe = async (wav: Uint8Array): Promise<string> => {
+  const form = new FormData()
+  form.append('file', new Blob([wav as BlobPart], { type: 'audio/wav' }), 'answer.wav')
+  form.append('model', 'phonon-2')
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), 20_000)
+  try {
+    const res = await fetch(`${PHONON_URL}/v1/audio/transcriptions`, {
+      method: 'POST',
+      headers: PHONON_API_KEY ? { authorization: `Bearer ${PHONON_API_KEY}` } : {},
+      body: form,
+      signal: ctrl.signal,
+    })
+    if (!res.ok) throw new Error(`phonon ${res.status}`)
+    const data = (await res.json()) as { text?: string }
+    return (data.text ?? '').trim()
+  } finally {
+    clearTimeout(t)
+  }
+}
 
 const http = createServer((req, res) => {
   if (req.url === '/health') {
@@ -90,6 +116,7 @@ const dealCard = (room: Room, first = false) => {
   s.card = drawCard(s.mode, first, duelsEnabled && connected.length >= 2, DUEL_CHANCE)
   s.punishment = null
   s.duel = null
+  s.answer = null
   let seconds = s.cardSeconds
   if (s.card.kind === 'duel') {
     const others = connected.filter((p) => p.id !== s.turnId)
@@ -187,7 +214,7 @@ io.on('connection', (socket) => {
     const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
     const code = newCode()
     const room: Room = {
-      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null },
+      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answersEnabled },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -256,6 +283,33 @@ io.on('connection', (socket) => {
     if (!isTurn && !isHost) return
     if (v === 'tapout') tapOut(c.room)
     else if (v === 'complete' || v === 'skip') advance(c.room)
+  })
+
+  socket.on('answer_audio', async (cardId, wav, ack) => {
+    const c = current()
+    if (!c) return ack({ ok: false, error: 'Not in a party' })
+    const s = c.room.state
+    if (!answersEnabled) return ack({ ok: false, error: 'Voice answers are off' })
+    if (s.phase !== 'game' || !s.card || s.card.id !== cardId || s.punishment || s.duel) return ack({ ok: false, error: 'That card is over' })
+    if (!s.card.answerable) return ack({ ok: false, error: 'This card is a dare, not a question' })
+    if (c.playerId !== s.turnId) return ack({ ok: false, error: 'Not your turn' })
+    // socket.io hands binary to Node as a Buffer; browsers send an ArrayBuffer.
+    const bytes = Buffer.isBuffer(wav) ? new Uint8Array(wav) : wav instanceof ArrayBuffer ? new Uint8Array(wav) : null
+    if (!bytes || bytes.byteLength < 1000) return ack({ ok: false, error: 'No audio' })
+    if (bytes.byteLength > MAX_ANSWER_BYTES) return ack({ ok: false, error: 'Answer too long' })
+    s.answer = { playerId: c.playerId, text: '', pending: true }
+    broadcast(c.room)
+    let text = ''
+    try {
+      text = await transcribe(bytes)
+    } catch (e) {
+      console.warn('transcription failed', (e as Error).message)
+    }
+    // The card may have moved on while Phonon was working; don't attach the answer to the next card.
+    if (c.room.state.card?.id !== cardId) return ack({ ok: false, error: 'That card is over' })
+    s.answer = text ? { playerId: c.playerId, text, pending: false } : null
+    broadcast(c.room)
+    ack(text ? { ok: true, text } : { ok: false, error: "Couldn't hear that — try again" })
   })
 
   socket.on('duel_token', async (ack) => {

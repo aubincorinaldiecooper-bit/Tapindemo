@@ -22,6 +22,9 @@ export interface RoomState {
   punishment: { playerId: string; text: string } | null
   // Set while a head-to-head card is on the table: the two duelists and who has already finished.
   duel: { players: [string, string]; done: string[] } | null
+  // Spoken answer to the current card (Phonon transcript). `text` is empty while transcription is in flight.
+  answer: { playerId: string; text: string; pending: boolean } | null
+  answersEnabled: boolean
 }
 
 export interface DuelAccess {
@@ -52,6 +55,8 @@ export interface ClientToServer {
   start_game: () => void
   verdict: (v: Verdict, cardId: number) => void
   punishment_done: () => void
+  // 16 kHz mono 16-bit WAV of the player's spoken answer to the current card.
+  answer_audio: (cardId: number, wav: ArrayBuffer, ack: (r: { ok: true; text: string } | { ok: false; error: string }) => void) => void
   duel_token: (ack: (r: { ok: true; access: DuelAccess } | { ok: false; error: string }) => void) => void
 }
 

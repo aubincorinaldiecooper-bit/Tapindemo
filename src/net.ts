@@ -123,6 +123,19 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
   const startGame = useCallback(() => socketRef.current?.emit('start_game'), [])
   const verdict = useCallback((v: Verdict, cardId: number) => socketRef.current?.emit('verdict', v, cardId), [])
   const punishmentDone = useCallback(() => socketRef.current?.emit('punishment_done'), [])
+  const answerAudio = useCallback(
+    (cardId: number, wav: ArrayBuffer) =>
+      new Promise<{ ok: true; text: string } | { ok: false; error: string }>((resolve) => {
+        const s = socketRef.current
+        if (!s) return resolve({ ok: false, error: 'Not connected' })
+        const t = window.setTimeout(() => resolve({ ok: false, error: 'Took too long' }), 30_000)
+        s.emit('answer_audio', cardId, wav, (r) => {
+          window.clearTimeout(t)
+          resolve(r)
+        })
+      }),
+    []
+  )
   const duelToken = useCallback(
     () =>
       new Promise<DuelAccess | null>((resolve) => {
@@ -142,7 +155,7 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
     setState(null)
   }, [])
 
-  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, duelToken, leaveRoom }
+  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, answerAudio, duelToken, leaveRoom }
 }
 
 const secondsUntil = (deadline: number) => Math.max(0, Math.ceil((deadline - Date.now()) / 1000))

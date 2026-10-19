@@ -22,3 +22,22 @@
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* Spoken answers (Phonon) */
+.spoken-answer { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: #1c1c21; border: 1px solid #26262c; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.spoken-answer-name { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #a1a1aa; }
+.spoken-answer-text { font-size: 15px; line-height: 1.35; color: #f5f5f4; }
+.spoken-answer.is-pending .spoken-answer-text { color: #a1a1aa; font-style: italic; }
+.mic-btn { width: 100%; margin: 14px 0 4px; padding: 14px 16px; border-radius: 16px; border: 1px solid #26262c; background: #1c1c21; color: #f5f5f4; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; touch-action: none; user-select: none; -webkit-user-select: none; transition: background 0.15s, transform 0.1s; }
+.mic-btn:active { transform: scale(0.98); }
+.mic-dot { width: 10px; height: 10px; border-radius: 999px; background: #a1a1aa; }
+.mic-recording { background: #f97316; border-color: #f97316; color: #0a0a0b; }
+.mic-recording .mic-dot { background: #ef4444; animation: mic-pulse 1s ease-in-out infinite; }
+.mic-sending { opacity: 0.7; }
+.mic-blocked { color: #ef4444; }
+@keyframes mic-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.6; } }
+.recap-answers { display: flex; flex-direction: column; gap: 8px; }
+.recap-answer { padding: 10px 12px; border-radius: 12px; background: #1c1c21; border: 1px solid #26262c; text-align: left; }
+.recap-answer-card { font-size: 11px; color: #a1a1aa; margin-bottom: 4px; }
+.recap-answer-text { font-size: 14px; color: #f5f5f4; line-height: 1.35; }
+.recap-answer-meta { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #a1a1aa; margin-top: 6px; }
