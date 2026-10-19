@@ -20,18 +20,21 @@ interface Props {
   selected: string
   onSelect: (url: string) => void
   onUploaded: () => void
+  onError: () => void
 }
 
-export function AvatarPicker({ selected, onSelect, onUploaded }: Props) {
+export function AvatarPicker({ selected, onSelect, onUploaded, onError }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    shrinkToDataUrl(file).then((url) => {
-      onSelect(url)
-      onUploaded()
-    })
+    shrinkToDataUrl(file)
+      .then((url) => {
+        onSelect(url)
+        onUploaded()
+      })
+      .catch(() => onError())
     e.target.value = ''
   }
 

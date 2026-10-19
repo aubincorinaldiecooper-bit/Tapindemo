@@ -4,7 +4,7 @@ import type { Mode } from '../game'
 import { AvatarPicker } from './AvatarPicker'
 import { avatarsList } from '../data'
 import { shareLinkFor } from '../net'
-import type { RoomState } from '../protocol'
+import { TIMER_OPTIONS, type RoomState, type TimerSeconds } from '../protocol'
 import { Modal, Pressable } from './ui'
 
 export interface Player {
@@ -104,6 +104,8 @@ interface HostProps {
   onAvatar: (url: string) => void
   onName: (name: string) => void
   onMode: (mode: Mode) => void
+  seconds: TimerSeconds
+  onSeconds: (s: TimerSeconds) => void
   onLockedBetchu: () => void
   onCancel: () => void
   onCreate: (name: string) => void
@@ -118,7 +120,7 @@ export function HostModal({ open, inert, ...props }: HostProps) {
   )
 }
 
-function HostBody({ mode, unlocked, user, onAvatar, onMode, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
+function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
   const [nameInput, setNameInput] = useState('Host')
 
   return (
@@ -126,7 +128,7 @@ function HostBody({ mode, unlocked, user, onAvatar, onMode, onLockedBetchu, onCa
       <h2>Host Party Room</h2>
       <div className="form-cols">
             <div className="form-col form-col-profile">
-            <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
+            <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} onError={() => toast("Couldn't read that photo — try another")} />
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
             <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
             </div>
@@ -143,6 +145,14 @@ function HostBody({ mode, unlocked, user, onAvatar, onMode, onLockedBetchu, onCa
                   onClick={() => (m === 'betchu' && !unlocked ? onLockedBetchu() : onMode(m))}
                 >
                   {m === 'classic' ? '🎉 Classic' : '🔥 Betchu Won’t'}
+                </motion.button>
+              ))}
+            </div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1 mt-4">Seconds per card</label>
+            <div className="mode-toggle timer-toggle">
+              {TIMER_OPTIONS.map((t) => (
+                <motion.button key={t} type="button" whileTap={{ scale: 0.96 }} className={`mode-toggle-option ${seconds === t ? 'mode-toggle-active' : ''}`} onClick={() => onSeconds(t)}>
+                  {t}s
                 </motion.button>
               ))}
             </div>
@@ -200,7 +210,7 @@ export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel,
       <h2>Join Room</h2>
       <div className="form-cols">
       <div className="form-col form-col-profile">
-      <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} />
+      <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} onError={() => toast("Couldn't read that photo — try another")} />
       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
       <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
       </div>
@@ -327,7 +337,7 @@ export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: R
             Share party link
           </Pressable>
           <div className="text-xs font-semibold text-gray-300 mb-2">
-            {state.players.length} {state.players.length === 1 ? 'player' : 'players'} · {state.mode === 'betchu' ? "🔥 I Betchu Won't" : '🎉 Classic'}
+            {state.players.length} {state.players.length === 1 ? 'player' : 'players'} · {state.mode === 'betchu' ? "🔥 I Betchu Won't" : '🎉 Classic'} · {state.cardSeconds}s cards
           </div>
           <div className="flex flex-col gap-2 mb-3 player-list">
             {state.players.map((p) => (
