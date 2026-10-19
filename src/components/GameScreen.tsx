@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
+import { useRef } from 'react'
 import type { DrawnCard, Mode } from '../game'
 import type { Player } from './Modals'
 import { Pressable } from './ui'
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+  const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
@@ -75,9 +77,21 @@ export function GameScreen({ mode, card, timeLeft, user, onHome, onComplete, onS
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.25}
+            onDragStart={() => {
+              dragged.current = true
+            }}
             onDragEnd={(_, info) => {
               if (info.offset.x > 110) onComplete()
               else if (info.offset.x < -110) onTapOut()
+              setTimeout(() => {
+                dragged.current = false
+              }, 0)
+            }}
+            onClickCapture={(e) => {
+              if (dragged.current) {
+                e.stopPropagation()
+                e.preventDefault()
+              }
             }}
           >
             <div className="card-top-info">
