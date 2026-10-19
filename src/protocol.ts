@@ -13,6 +13,7 @@ export interface RoomState {
   code: string
   hostId: string
   mode: Mode
+  cardSeconds: number
   phase: Phase
   players: RoomPlayer[]
   card: DrawnCard | null
@@ -20,6 +21,10 @@ export interface RoomState {
   deadline: number | null
   punishment: { playerId: string; text: string } | null
 }
+
+export const TIMER_OPTIONS = [10, 15, 20] as const
+export type TimerSeconds = (typeof TIMER_OPTIONS)[number]
+export const DEFAULT_TIMER: TimerSeconds = 10
 
 export type Verdict = 'complete' | 'tapout' | 'skip'
 
@@ -30,7 +35,7 @@ export interface Profile {
 }
 
 export interface ClientToServer {
-  create_room: (p: Profile & { mode: Mode }, ack: (r: { ok: true; state: RoomState } | { ok: false; error: string }) => void) => void
+  create_room: (p: Profile & { mode: Mode; seconds: number }, ack: (r: { ok: true; state: RoomState } | { ok: false; error: string }) => void) => void
   join_room: (p: Profile & { code: string }, ack: (r: { ok: true; state: RoomState } | { ok: false; error: string }) => void) => void
   leave_room: () => void
   start_game: () => void

@@ -2,13 +2,14 @@ import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { classicPunishmentsList } from '../../src/data'
 import { drawCard } from '../../src/game'
-import type { ClientToServer, Profile, RoomState, ServerToClient, Verdict } from '../../src/protocol'
+import { DEFAULT_TIMER, TIMER_OPTIONS, type ClientToServer, type Profile, type RoomState, type ServerToClient, type Verdict } from '../../src/protocol'
 
 const PORT = Number(process.env.PORT ?? 8787)
-const CARD_SECONDS = 60
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000
 const MAX_AVATAR_CHARS = 200_000
-const origins = (process.env.CORS_ORIGINS ?? '*').split(',').map((s) => s.trim())
+const DEFAULT_ORIGINS = 'https://aubincorinaldiecooper-bit.github.io,http://localhost:5173,http://127.0.0.1:5173'
+const origins = (process.env.CORS_ORIGINS ?? DEFAULT_ORIGINS).split(',').map((s) => s.trim())
+const PUNISHMENT_TIMEOUT_MS = 90_000
 
 const http = createServer((req, res) => {
   if (req.url === '/health') {
@@ -27,8 +28,12 @@ const io = new Server<ClientToServer, ServerToClient>(http, {
 interface Room {
   state: RoomState
   timer?: NodeJS.Timeout
+  graceTimer?: NodeJS.Timeout
   emptySince?: number
 }
+
+// A refresh or screen lock drops the socket for a moment; wait this long before skipping their turn.
+const TURN_GRACE_MS = 10_000
 
 const rooms = new Map<string, Room>()
 const socketRoom = new Map<string, { code: string; playerId: string }>()
@@ -43,7 +48,7 @@ const newCode = () => {
 const cleanProfile = (p: Profile) => ({
   playerId: String(p.playerId ?? '').slice(0, 64),
   name: String(p.name ?? '').trim().slice(0, 16) || 'Player',
-  avatar: typeof p.avatar === 'string' && p.avatar.length <= MAX_AVATAR_CHARS ? p.avatar : '',
+  avatar: typeof p.avatar === 'string' && p.avatar.length <= MAX_AVATAR_CHARS && /^data:image\/(jpeg|png|webp|svg\+xml);/.test(p.avatar) ? p.avatar : '',
 })
 
 const broadcast = (room: Room) => io.to(room.state.code).emit('room_state', room.state)
@@ -64,10 +69,10 @@ const nextTurn = (room: Room) => {
 const dealCard = (room: Room, first = false) => {
   const s = room.state
   s.card = drawCard(s.mode, first)
-  s.deadline = Date.now() + CARD_SECONDS * 1000
+  s.deadline = Date.now() + s.cardSeconds * 1000
   s.punishment = null
   clearTimer(room)
-  room.timer = setTimeout(() => tapOut(room), CARD_SECONDS * 1000 + 250)
+  room.timer = setTimeout(() => tapOut(room), s.cardSeconds * 1000 + 250)
   broadcast(room)
 }
 
@@ -77,12 +82,57 @@ const tapOut = (room: Room) => {
   clearTimer(room)
   s.deadline = null
   s.punishment = { playerId: s.turnId, text: classicPunishmentsList[Math.floor(Math.random() * classicPunishmentsList.length)] }
+  // Nobody left to press Done (both punished player and host gone)? Move on by itself.
+  room.timer = setTimeout(() => advance(room), PUNISHMENT_TIMEOUT_MS)
   broadcast(room)
 }
 
 const advance = (room: Room) => {
   nextTurn(room)
   dealCard(room)
+}
+
+const isSocketOf = (code: string, playerId: string, socketId: string) => {
+  const ref = socketRoom.get(socketId)
+  return !!ref && ref.code === code && ref.playerId === playerId
+}
+
+const detach = (socketId: string, explicit: boolean) => {
+  const ref = socketRoom.get(socketId)
+  socketRoom.delete(socketId)
+  if (!ref) return
+  const room = rooms.get(ref.code)
+  if (!room) return
+  const s = room.state
+  const player = s.players.find((p) => p.id === ref.playerId)
+  if (!player) return
+  // The same player may be connected from a second tab; only mark away when the last socket is gone.
+  const stillConnected = [...socketRoom.values()].some((r) => r.code === s.code && r.playerId === ref.playerId)
+  if (explicit && s.phase === 'lobby') s.players = s.players.filter((p) => p.id !== ref.playerId)
+  else if (!stillConnected) player.connected = false
+  io.sockets.sockets.get(socketId)?.leave(s.code)
+  if (stillConnected) return broadcast(room)
+  if (s.players.every((p) => !p.connected)) room.emptySince = Date.now()
+  if (s.hostId === ref.playerId) {
+    if (explicit && s.phase === 'lobby') {
+      io.to(s.code).emit('room_closed', 'The host left the party')
+      clearTimer(room)
+      rooms.delete(s.code)
+      return
+    }
+    // Host dropped: hand the party to the next connected player so the lobby never locks up.
+    const next = s.players.find((p) => p.connected)
+    if (next) s.hostId = next.id
+  }
+  if (s.phase === 'game' && s.turnId === ref.playerId && !s.punishment) {
+    if (room.graceTimer) clearTimeout(room.graceTimer)
+    room.graceTimer = setTimeout(() => {
+      room.graceTimer = undefined
+      const turn = s.players.find((p) => p.id === s.turnId)
+      if (s.phase === 'game' && turn && !turn.connected && !s.punishment) advance(room)
+    }, TURN_GRACE_MS)
+  }
+  broadcast(room)
 }
 
 io.on('connection', (socket) => {
@@ -96,9 +146,10 @@ io.on('connection', (socket) => {
   socket.on('create_room', (p, ack) => {
     const prof = cleanProfile(p)
     const mode = p.mode === 'betchu' ? 'betchu' : 'classic'
+    const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
     const code = newCode()
     const room: Room = {
-      state: { code, hostId: prof.playerId, mode, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null },
+      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -111,9 +162,18 @@ io.on('connection', (socket) => {
     const code = String(p.code ?? '').replace(/\D/g, '').slice(0, 4)
     const room = rooms.get(code)
     if (!room) return ack({ ok: false, error: 'No party with that code' })
+    const prev = socketRoom.get(socket.id)
+    if (prev && prev.code !== code) detach(socket.id, false)
     const s = room.state
     const existing = s.players.find((pl) => pl.id === prof.playerId)
+    if (existing?.connected && existing.id === s.hostId && !isSocketOf(code, existing.id, socket.id)) {
+      return ack({ ok: false, error: 'The host is already in this party' })
+    }
     if (existing) {
+      if (room.graceTimer && s.turnId === existing.id) {
+        clearTimeout(room.graceTimer)
+        room.graceTimer = undefined
+      }
       existing.connected = true
       existing.name = prof.name
       if (prof.avatar) existing.avatar = prof.avatar
@@ -158,29 +218,8 @@ io.on('connection', (socket) => {
     advance(c.room)
   })
 
-  const drop = (explicit: boolean) => {
-    const c = current()
-    socketRoom.delete(socket.id)
-    if (!c) return
-    const s = c.room.state
-    const player = s.players.find((p) => p.id === c.playerId)
-    if (!player) return
-    if (explicit && s.phase === 'lobby') s.players = s.players.filter((p) => p.id !== c.playerId)
-    else player.connected = false
-    socket.leave(s.code)
-    if (s.players.every((p) => !p.connected)) c.room.emptySince = Date.now()
-    if (s.phase === 'game' && s.turnId === c.playerId && !s.punishment) advance(c.room)
-    else if (s.phase === 'lobby' && s.hostId === c.playerId && explicit) {
-      io.to(s.code).emit('room_closed', 'The host left the party')
-      clearTimer(c.room)
-      rooms.delete(s.code)
-      return
-    }
-    broadcast(c.room)
-  }
-
-  socket.on('leave_room', () => drop(true))
-  socket.on('disconnect', () => drop(false))
+  socket.on('leave_room', () => detach(socket.id, true))
+  socket.on('disconnect', () => detach(socket.id, false))
 })
 
 setInterval(() => {

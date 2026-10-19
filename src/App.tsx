@@ -7,7 +7,8 @@ import { CheckoutModal, HostModal, JoinModal, RecapModal, RoomLobbyModal, StoreM
 import { ProofCameraModal } from './components/ProofCamera'
 import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
-import { getPlayerId, roomFromUrl, useDeadline, useRoom } from './net'
+import { getPlayerId, roomFromUrl, savedParty, useDeadline, useRoom } from './net'
+import { DEFAULT_TIMER, type TimerSeconds } from './protocol'
 
 type Screen = 'title' | 'lobby' | 'game'
 type ModalName = 'store' | 'checkout' | 'host' | 'join' | 'room' | 'proof' | 'recap' | null
@@ -17,11 +18,12 @@ export default function App() {
   const [inviteCode] = useState(() => roomFromUrl())
   const [meId] = useState(() => getPlayerId())
   // Arriving through a party link skips the title and opens Join with the code filled in.
-  const [screen, setScreen] = useState<Screen>(() => (inviteCode ? 'lobby' : 'title'))
+  const [screen, setScreen] = useState<Screen>(() => (inviteCode || savedParty() ? 'lobby' : 'title'))
   const [modal, setModal] = useState<ModalName>(() => (inviteCode ? 'join' : null))
   const [checkoutFrom, setCheckoutFrom] = useState<ModalName>(null)
   const [mode, setMode] = useState<Mode>('classic')
   const [unlocked, setUnlocked] = useState(false)
+  const [seconds, setSeconds] = useState<TimerSeconds>(DEFAULT_TIMER)
   const [user, setUser] = useState<Player>({ name: 'Player', avatar: avatarsList[0] })
   const [photos, setPhotos] = useState<ProofPhoto[]>([])
   const [toastMsg, setToastMsg] = useState<{ id: number; text: string } | null>(null)
@@ -80,7 +82,7 @@ export default function App() {
 
   const hostCreate = async (name: string) => {
     if (name) setUser((u) => ({ ...u, name }))
-    const r = await room.createRoom(name || user.name, user.avatar, mode)
+    const r = await room.createRoom(name || user.name, user.avatar, mode, seconds)
     if (!r.ok) toast(r.error)
   }
 
@@ -155,6 +157,8 @@ export default function App() {
         onAvatar={(avatar) => setUser((u) => ({ ...u, avatar }))}
         onName={(name) => setUser((u) => ({ ...u, name }))}
         onMode={setMode}
+        seconds={seconds}
+        onSeconds={setSeconds}
         onLockedBetchu={() => { setCheckoutFrom('host'); setModal('checkout') }}
         onCancel={() => setModal(null)}
         onCreate={hostCreate}
