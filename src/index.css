@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@import "./legacy.css" layer(components);
+
+/* Motion drives transforms on these; keep CSS transitions off transform so springs stay crisp. */
+.motion-press {
+  transition-property: color, background-color, border-color, box-shadow, opacity !important;
+}
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  background: #1e293b;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  z-index: 3000;
+  pointer-events: none;
+  white-space: nowrap;
+}
