@@ -12,7 +12,7 @@ const MAX_AVATAR_CHARS = 200_000
 const DEFAULT_ORIGINS = 'https://aubincorinaldiecooper-bit.github.io,http://localhost:5173,http://127.0.0.1:5173'
 const origins = (process.env.CORS_ORIGINS ?? DEFAULT_ORIGINS).split(',').map((s) => s.trim())
 // Rounds are only 60 s, so a punishment shows briefly and the next card comes on its own.
-const PUNISHMENT_TIMEOUT_MS = 3_500
+const PUNISHMENT_TIMEOUT_MS = 3_000
 const ROUND_MS = ROUND_SECONDS * 1000
 const DUEL_TIME_FACTOR = 3
 const LIVEKIT_URL = process.env.LIVEKIT_URL ?? ''

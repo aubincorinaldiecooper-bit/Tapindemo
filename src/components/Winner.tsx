@@ -73,10 +73,10 @@ export function WinnerModal({ open, inert, results, players, isHost, locked, onA
                 ))}
               </div>
               <div className="winner-name">{winners.map((w) => w.name).join(' & ')}</div>
-              <div className="winner-meta">
-                Round {results.round} · {top} pts
-              </div>
             </div>
+          </div>
+          <div className="winner-meta">
+            Round {results.round} · {top} pts
           </div>
           <div className="winner-standings">
             {standings.map((p, i) => (
