@@ -11,6 +11,7 @@ export interface RoomPlayer {
 
 export interface RoomState {
   code: string
+  roomName: string
   hostId: string
   mode: Mode
   cardSeconds: number
@@ -39,6 +40,8 @@ export const TIMER_OPTIONS = [10, 15, 20] as const
 export type TimerSeconds = (typeof TIMER_OPTIONS)[number]
 export const DEFAULT_TIMER: TimerSeconds = 10
 
+export const MIN_PLAYERS = 2
+
 export type Verdict = 'complete' | 'tapout' | 'skip'
 
 export interface Profile {
@@ -51,7 +54,7 @@ export interface Profile {
 export type JoinAck = { ok: true; state: RoomState; me: string } | { ok: false; error: string }
 
 export interface ClientToServer {
-  create_room: (p: Profile & { mode: Mode; seconds: number }, ack: (r: JoinAck) => void) => void
+  create_room: (p: Profile & { mode: Mode; seconds: number; roomName: string }, ack: (r: JoinAck) => void) => void
   join_room: (p: Profile & { code: string }, ack: (r: JoinAck) => void) => void
   leave_room: () => void
   start_game: () => void

@@ -4,7 +4,7 @@ import { AccessToken } from 'livekit-server-sdk'
 import { Server } from 'socket.io'
 import { classicPunishmentsList } from '../../src/data'
 import { drawCard } from '../../src/game'
-import { DEFAULT_TIMER, TIMER_OPTIONS, type ClientToServer, type Profile, type RoomState, type ServerToClient, type Verdict } from '../../src/protocol'
+import { DEFAULT_TIMER, MIN_PLAYERS, TIMER_OPTIONS, type ClientToServer, type Profile, type RoomState, type ServerToClient, type Verdict } from '../../src/protocol'
 
 const PORT = Number(process.env.PORT ?? 8787)
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000
@@ -90,6 +90,16 @@ const cleanProfile = (p: Profile) => ({
   name: String(p.name ?? '').trim().slice(0, 16) || 'Player',
   avatar: typeof p.avatar === 'string' && p.avatar.length <= MAX_AVATAR_CHARS && /^data:image\/(jpeg|png|webp|svg\+xml);/.test(p.avatar) ? p.avatar : '',
 })
+
+// Two "Sam"s at one table can't tell whose turn it is: the later one becomes "Sam 2".
+const uniqueName = (players: { name: string }[], name: string) => {
+  const taken = new Set(players.map((p) => p.name.toLowerCase()))
+  if (!taken.has(name.toLowerCase())) return name
+  for (let n = 2; ; n++) {
+    const candidate = `${name.slice(0, 13)} ${n}`
+    if (!taken.has(candidate.toLowerCase())) return candidate
+  }
+}
 
 const broadcast = (room: Room) => io.to(room.state.code).emit('room_state', room.state)
 
@@ -214,11 +224,14 @@ io.on('connection', (socket) => {
 
   socket.on('create_room', (p, ack) => {
     const prof = cleanProfile(p)
+    const roomName = String(p.roomName ?? '').trim().slice(0, 24)
+    if (!roomName) return ack({ ok: false, error: 'Name your party first' })
+    if (!String(p.name ?? '').trim()) return ack({ ok: false, error: 'Add your nickname first' })
     const mode = p.mode === 'betchu' ? 'betchu' : 'classic'
     const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
     const code = newCode()
     const room: Room = {
-      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answers: [], answersEnabled },
+      state: { code, roomName, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answers: [], answersEnabled },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -246,7 +259,8 @@ io.on('connection', (socket) => {
       existing.name = prof.name
       if (prof.avatar) existing.avatar = prof.avatar
     } else {
-      s.players.push({ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true })
+      if (!String(p.name ?? '').trim()) return ack({ ok: false, error: 'Add your nickname first' })
+      s.players.push({ id: prof.playerId, name: uniqueName(s.players, prof.name), avatar: prof.avatar, connected: true })
     }
     room.emptySince = undefined
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -258,6 +272,7 @@ io.on('connection', (socket) => {
   socket.on('start_game', () => {
     const c = current()
     if (!c || c.playerId !== c.room.state.hostId || c.room.state.phase !== 'lobby') return
+    if (c.room.state.players.filter((p) => p.connected).length < MIN_PLAYERS) return
     c.room.state.phase = 'game'
     c.room.state.turnId = c.room.state.hostId
     dealCard(c.room, true)

@@ -116,17 +116,18 @@ export default function App() {
     setScreen('title')
   }
 
-  const hostCreate = async (name: string) => {
-    if (name) setUser((u) => ({ ...u, name }))
-    const r = await room.createRoom(name || user.name, user.avatar, mode, seconds)
+  const hostCreate = async (name: string, roomName: string) => {
+    setUser((u) => ({ ...u, name }))
+    const r = await room.createRoom(name, user.avatar, mode, seconds, roomName)
     if (!r.ok) toast(r.error)
   }
 
   const join = async (code: string, name: string) => {
-    if (name) setUser((u) => ({ ...u, name }))
-    const r = await room.joinRoom(code, name || user.name, user.avatar)
+    setUser((u) => ({ ...u, name }))
+    const r = await room.joinRoom(code, name, user.avatar)
     if (!r.ok) toast(r.error)
     else if (inviteCode) window.history.replaceState(null, '', window.location.pathname)
+    return r.ok
   }
 
   return (

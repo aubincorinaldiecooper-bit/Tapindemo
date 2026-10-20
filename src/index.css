@@ -143,3 +143,7 @@
 .onb-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); border: 0; padding: 0; }
 .onb-dot.is-on { width: 18px; background: #e4e4e7; }
 .help-btn { font-weight: 900; font-size: 1rem; }
+
+.modal-content input.input-missing { border-color: #f87171 !important; box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18); }
+.lobby-room-name { font-size: 0.95rem; font-weight: 800; color: #e4e4e7; margin: -4px 0 6px; }
+.modal-content .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }

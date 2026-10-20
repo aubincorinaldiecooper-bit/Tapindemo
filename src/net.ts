@@ -116,7 +116,7 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
   )
 
   const createRoom = useCallback(
-    (name: string, avatar: string, mode: Mode, seconds: number) => call('create_room', { playerId: getPlayerId(), name, avatar, mode, seconds }),
+    (name: string, avatar: string, mode: Mode, seconds: number, roomName: string) => call('create_room', { playerId: getPlayerId(), name, avatar, mode, seconds, roomName }),
     [call],
   )
   const joinRoom = useCallback((code: string, name: string, avatar: string) => call('join_room', { playerId: getPlayerId(), name, avatar, code }), [call])

@@ -4,7 +4,7 @@ import type { Mode } from '../game'
 import { AvatarPicker } from './AvatarPicker'
 import { avatarsList } from '../data'
 import { shareLinkFor } from '../net'
-import { TIMER_OPTIONS, type RoomState, type TimerSeconds } from '../protocol'
+import { MIN_PLAYERS, TIMER_OPTIONS, type RoomState, type TimerSeconds } from '../protocol'
 import { Modal, Pressable } from './ui'
 
 export interface Player {
@@ -114,7 +114,7 @@ interface HostProps {
   onSeconds: (s: TimerSeconds) => void
   onLockedBetchu: () => void
   onCancel: () => void
-  onCreate: (name: string) => void
+  onCreate: (name: string, roomName: string) => Promise<void>
   toast: (msg: string) => void
 }
 
@@ -127,7 +127,22 @@ export function HostModal({ open, inert, ...props }: HostProps) {
 }
 
 function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
-  const [nameInput, setNameInput] = useState(user.name === 'Player' ? 'Host' : user.name)
+  const [nameInput, setNameInput] = useState(user.name === 'Player' ? '' : user.name)
+  const [roomName, setRoomName] = useState('')
+  const [missing, setMissing] = useState<{ name?: boolean; room?: boolean }>({})
+  const [busy, setBusy] = useState(false)
+  const create = async () => {
+    const m = { name: !nameInput.trim(), room: !roomName.trim() }
+    setMissing(m)
+    if (m.name || m.room) return toast(m.name ? 'Add your nickname first' : 'Name your party first')
+    if (busy) return
+    setBusy(true)
+    try {
+      await onCreate(nameInput.trim(), roomName.trim())
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <>
@@ -136,11 +151,11 @@ function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, 
             <div className="form-col form-col-profile">
             <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} onError={() => toast("Couldn't read that photo — try another")} />
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
-            <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
+            <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} aria-invalid={missing.name || undefined} className={missing.name ? 'input-missing' : ''} onChange={(e) => { setNameInput(e.target.value); setMissing((x) => ({ ...x, name: false })) }} />
             </div>
             <div className="form-col">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1 form-desktop-label">Party Room Name</label>
-            <input type="text" placeholder="Party Room Name (e.g., Friday Night Tap In)" maxLength={24} />
+            <input type="text" placeholder="Party Room Name (e.g., Friday Night Tap In)" maxLength={24} value={roomName} aria-invalid={missing.room || undefined} className={missing.room ? 'input-missing' : ''} onChange={(e) => { setRoomName(e.target.value); setMissing((x) => ({ ...x, room: false })) }} />
             <div className="mode-toggle">
               {(['classic', 'betchu'] as const).map((m) => (
                 <motion.button
@@ -162,8 +177,8 @@ function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, 
                 </motion.button>
               ))}
             </div>
-            <Pressable onClick={() => onCreate(nameInput.trim())} className="btn-primary w-full text-base py-3">
-              Create Party Link
+            <Pressable onClick={() => void create()} disabled={busy} className="btn-primary w-full text-base py-3">
+              {busy ? 'Creating…' : 'Create Party Link'}
             </Pressable>
             </div>
             </div>
@@ -181,14 +196,18 @@ interface JoinProps {
   initialCode: string | null
   user: Player
   onAvatar: (url: string) => void
-  onJoin: (code: string, name: string) => void
+  onJoin: (code: string, name: string) => Promise<boolean>
   onCancel: () => void
   toast: (msg: string) => void
 }
 
 export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel, toast }: JoinProps) {
   const [digits, setDigits] = useState(() => (initialCode ? initialCode.split('') : ['', '', '', '']))
-  const [nameInput, setNameInput] = useState(user.name)
+  const [nameInput, setNameInput] = useState(user.name === 'Player' ? '' : user.name)
+  const [missingName, setMissingName] = useState(false)
+  const [busy, setBusy] = useState(false)
+  // A dead invite link (party ended / wrong code) falls back to typing a PIN instead of a hidden, unfixable code.
+  const [invite, setInvite] = useState(initialCode)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const shake = useAnimationControls()
 
@@ -202,13 +221,27 @@ export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel,
     if (e.key === 'Backspace' && !digits[i] && i > 0) inputs.current[i - 1]?.focus()
   }
 
-  const submit = () => {
+  const submit = async () => {
+    if (!nameInput.trim()) {
+      setMissingName(true)
+      return toast('Add your nickname first')
+    }
     if (digits.join('').length < 4) {
       toast('Please enter the 4-digit code')
       shake.start({ x: [0, -10, 10, -8, 8, -4, 4, 0], transition: { duration: 0.45 } })
       return
     }
-    onJoin(digits.join(''), nameInput.trim())
+    if (busy) return
+    setBusy(true)
+    try {
+      const ok = await onJoin(digits.join(''), nameInput.trim())
+      if (!ok && invite) {
+        setInvite(null)
+        setDigits(['', '', '', ''])
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -218,12 +251,12 @@ export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel,
       <div className="form-col form-col-profile">
       <AvatarPicker selected={user.avatar} onSelect={onAvatar} onUploaded={() => toast('📸 Profile photo updated!')} onError={() => toast("Couldn't read that photo — try another")} />
       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">Your Nickname</label>
-      <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
+      <input type="text" placeholder="Your Name" maxLength={16} value={nameInput} aria-invalid={missingName || undefined} className={missingName ? 'input-missing' : ''} onChange={(e) => { setNameInput(e.target.value); setMissingName(false) }} />
       </div>
       <div className="form-col">
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">{initialCode ? 'Party' : 'Enter 4-Digit Pin'}</label>
-      {initialCode && <div className="join-invite">You're invited to party <b>{initialCode}</b></div>}
-      <motion.div className={`code-input-group mb-4 ${initialCode ? 'hidden' : ''}`} animate={shake}>
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1">{invite ? 'Party' : 'Enter 4-Digit Pin'}</label>
+      {invite && <div className="join-invite">You're invited to party <b>{invite}</b></div>}
+      <motion.div className={`code-input-group mb-4 ${invite ? 'hidden' : ''}`} animate={shake}>
         {digits.map((d, i) => (
           <motion.input
             key={i}
@@ -243,8 +276,8 @@ export function JoinModal({ open, initialCode, user, onAvatar, onJoin, onCancel,
           />
         ))}
       </motion.div>
-      <Pressable onClick={submit} className="btn-primary w-full text-base py-3">
-        Join Room
+      <Pressable onClick={() => void submit()} disabled={busy} className="btn-primary w-full text-base py-3">
+        {busy ? 'Joining…' : 'Join Room'}
       </Pressable>
       </div>
       </div>
@@ -325,6 +358,7 @@ interface RoomLobbyProps {
 
 export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: RoomLobbyProps) {
   const isHost = !!state && state.hostId === meId
+  const canStart = !!state && state.players.filter((p) => p.connected).length >= MIN_PLAYERS
   const share = async () => {
     if (!state) return
     const url = shareLinkFor(state.code)
@@ -344,6 +378,7 @@ export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: R
       {state && (
         <>
           <h2>{isHost ? 'Your Party' : 'Party Lobby'}</h2>
+          {state.roomName && <div className="lobby-room-name">{state.roomName}</div>}
           <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2 mb-1">Party Code</div>
           <div className="code-display flex justify-center">
             {state.code.split('').map((d, i) => (
@@ -376,8 +411,8 @@ export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: R
             ))}
           </div>
           {isHost ? (
-            <Pressable onClick={onStart} className="btn-primary w-full text-base py-3 mt-2">
-              Start Game 🚀
+            <Pressable onClick={onStart} disabled={!canStart} className="btn-primary w-full text-base py-3 mt-2">
+              {canStart ? 'Start Game 🚀' : 'Waiting for a 2nd player…'}
             </Pressable>
           ) : (
             <div className="turn-wait mt-2">
