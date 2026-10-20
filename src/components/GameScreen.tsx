@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useRef, type RefObject } from 'react'
+import { CardStack } from './CardStack'
+import { useState, type RefObject } from 'react'
 import type { DuelStatus } from '../duel'
 import type { MicState } from '../answer'
 import type { DrawnCard, Mode } from '../game'
@@ -13,7 +14,7 @@ interface Props {
   user: Player
   isMyTurn: boolean
   turnName: string
-  duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
+  duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; remoteLive: boolean; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
   onComplete: () => void
   // Spoken answer (Phonon). `mic` is only passed when the room has voice answers and this device can record.
@@ -26,13 +27,19 @@ interface Props {
 }
 
 export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
-  const dragged = useRef(false)
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
   const isDuel = card.kind === 'duel' && !!duel
   const canAct = isDuel ? duel!.iAmIn && !duel!.iAmDone : isMyTurn
-  const urgent = timeLeft <= 10
+  // Live duel (I'm one of the two): both cameras fill the stage and the card sits in its own band between/beside them.
+  const liveDuel = isDuel && duel!.iAmIn
+  const rival = isDuel ? (duel!.names.find((n) => n !== user.name) ?? duel!.names[0]) : ''
+  // Share of the timer left, from the longest countdown seen for this card (the server owns the deadline).
+  const [longest, setLongest] = useState({ id: card.id, secs: timeLeft })
+  if (longest.id !== card.id || timeLeft > longest.secs) setLongest({ id: card.id, secs: timeLeft })
+  const timeFraction = longest.secs > 0 ? timeLeft / longest.secs : 0
+  const urgent = timeLeft <= 3 || timeFraction <= 0.2
 
   const cardClasses = [
     isBetchu && 'betchu-active-card',
@@ -44,16 +51,16 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
     .filter(Boolean)
     .join(' ')
 
-  const badge = isDuel ? 'HEAD TO HEAD' : isBetchu ? "I BETCHU WON'T EDITION" : isShotOClock ? "SHOT O'CLOCK CARD" : isWildcard ? 'WILDCARD' : 'ROUND ' + (card.index + 1)
+  const badge = isBetchu ? "I BETCHU WON'T EDITION" : isShotOClock ? "SHOT O'CLOCK CARD" : isWildcard ? 'WILDCARD' : 'ROUND ' + (card.index + 1)
 
   return (
     <motion.div
-      className="absolute inset-0 z-[1100] bg-[#08080c] flex justify-center items-center"
+      className="absolute inset-0 z-[1100] flex justify-center items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div className={`game-container ${cardClasses}`}>
+      <div className={`game-container ${cardClasses}${liveDuel ? ' duel-live' : ''}`}>
         <div className="game-top-bar">
           <Pressable className="icon-nav-btn exit-btn" title="Exit game" aria-label="Exit game" onClick={onHome}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,51 +84,35 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
           )}
         </div>
 
+        <div className={`game-stage${liveDuel ? ' duel-live-stage' : ''}`}>
+          {/* oxlint-disable react/refs -- ref objects are passed down as props, not read during render */}
+          {liveDuel && (
+            <div className="duel-cam duel-cam-local">
+              <video ref={duel!.localVideo} className="duel-video" autoPlay playsInline muted />
+              <span className="duel-cam-name">{user.name}</span>
+              <span className="duel-cam-you">You</span>
+              {(duel!.status === 'no-camera' || duel!.status === 'error') && (
+                <div className="duel-overlay">
+                  {duel!.status === 'no-camera' ? 'Camera blocked — allow camera access to duel' : 'Video unavailable'}
+                </div>
+              )}
+            </div>
+          )}
         <AnimatePresence mode="wait">
-          <motion.div
+          <CardStack
             key={card.id}
-            className={`main-game-card ${cardClasses}`}
-            initial={{ opacity: 0, x: 80, rotate: 6, scale: 0.94 }}
-            animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -80, rotate: -6, scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            drag={canAct ? 'x' : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.25}
-            onDragStart={() => {
-              dragged.current = true
-            }}
-            onDragEnd={(_, info) => {
-              if (!canAct) return
-              if (info.offset.x > 110) onComplete()
-              else if (info.offset.x < -110) onTapOut()
-              setTimeout(() => {
-                dragged.current = false
-              }, 0)
-            }}
-            onClickCapture={(e) => {
-              if (dragged.current) {
-                e.stopPropagation()
-                e.preventDefault()
-              }
-            }}
+            className={cardClasses}
+            canAct={canAct}
+            timeFraction={timeFraction}
+            urgent={urgent}
+            onSwipeRight={onComplete}
+            onSwipeLeft={onTapOut}
           >
             <div className="card-top-info">
-              <span className="turn-badge turn-active-badge">🎲 {badge}</span>
-              <motion.div
-                className="timer-section"
-                animate={urgent ? { scale: [1, 1.12, 1], color: '#f87171' } : { scale: 1 }}
-                transition={urgent ? { duration: 0.6, repeat: Infinity } : { duration: 0.2 }}
-              >
-                <span>⏱️</span>{' '}
-                <motion.span key={timeLeft} initial={{ y: -6, opacity: 0.4 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.18 }}>
-                  {timeLeft}
-                </motion.span>
-                s
-              </motion.div>
+              {!isDuel && <span className="turn-badge turn-active-badge">🎲 {badge}</span>}
             </div>
 
-            {isDuel && (
+            {isDuel && !liveDuel && (
               <div className="duel-stage">
                 <div className="duel-names">
                   <span>{duel!.names[0]}</span>
@@ -131,8 +122,6 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
                 <div className="duel-videos">
                   {/* oxlint-disable-next-line react/refs -- ref objects are passed down as props, not read during render */}
                   <video ref={duel!.remoteVideo} className="duel-video duel-video-remote" autoPlay playsInline />
-                  {/* oxlint-disable-next-line react/refs */}
-                  {duel!.iAmIn && <video ref={duel!.localVideo} className="duel-video duel-video-local" autoPlay playsInline muted />}
                   {duel!.status !== 'live' && (
                     <div className="duel-overlay">
                       {duel!.status === 'connecting' && 'Connecting cameras…'}
@@ -146,14 +135,16 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
             )}
             <div className="flex flex-col items-center justify-center my-auto w-full px-2">
               {card.isIcebreaker && <div className="icebreaker-icon-glow">🧊</div>}
-              <motion.span
-                className={`spice-tag ${card.spiceClass}`}
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15, type: 'spring', stiffness: 500, damping: 16 }}
-              >
-                {card.spiceLabel}
-              </motion.span>
+              {!isDuel && (
+                <motion.span
+                  className={`spice-tag ${card.spiceClass}`}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.15, type: 'spring', stiffness: 500, damping: 16 }}
+                >
+                  {card.spiceLabel}
+                </motion.span>
+              )}
               {isBetchu && <div className="betchu-dare-callout">I BETCHU WON'T...</div>}
               {isShotOClock && (
                 <motion.div className="shotoclock-callout" animate={{ rotate: [0, -4, 4, -2, 0] }} transition={{ delay: 0.3, duration: 0.5 }}>
@@ -210,8 +201,23 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
                 {isDuel ? (duel!.iAmDone ? 'Waiting for your rival' : `${duel!.names[0]} vs ${duel!.names[1]}`) : `${turnName}'s turn`}
               </div>
             )}
-          </motion.div>
+          </CardStack>
         </AnimatePresence>
+          {liveDuel && (
+            <div className={`duel-cam duel-cam-remote${duel!.remoteLive ? ' is-live' : ' is-loading'}`}>
+              <video ref={duel!.remoteVideo} className="duel-video" autoPlay playsInline />
+              {duel!.remoteLive ? (
+                <span className="duel-cam-name">{rival}</span>
+              ) : (
+                <div className="duel-waiting" role="status">
+                  <span className="duel-spinner" aria-hidden />
+                  Waiting for user
+                </div>
+              )}
+            </div>
+          )}
+          {/* oxlint-enable react/refs */}
+        </div>
 
         <div className="actions-secondary-row mb-2">
           <Pressable className="action-chip-btn" onClick={onSnitch}>

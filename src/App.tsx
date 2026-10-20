@@ -1,3 +1,4 @@
+import { DotPattern } from './components/DotPattern'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { avatarsList } from './data'
@@ -124,6 +125,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <DotPattern className="app-dots" />
       <Toast message={toastMsg} />
       <AnimatePresence>{loading && <LoadingScreen key="loading" />}</AnimatePresence>
 
@@ -158,14 +160,11 @@ export default function App() {
             user={user}
             isMyTurn={isMyTurn}
             turnName={turnPlayer?.name ?? 'Someone'}
-            duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
+            duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, remoteLive: video.remoteLive, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
             answer={spoken}
             mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
-            onComplete={() => {
-              toast('✨ Action completed successfully!')
-              room.verdict('complete', state.card!.id)
-            }}
+            onComplete={() => room.verdict('complete', state.card!.id)}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
             onNext={() => {
