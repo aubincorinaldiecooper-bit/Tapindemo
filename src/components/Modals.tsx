@@ -22,7 +22,6 @@ export interface SpokenAnswer {
   player: string
   card: string
   text: string
-  time: string
 }
 
 export function StoreModal({ open, inert, onClose, onUnlock }: { open: boolean; inert?: boolean; onClose: () => void; onUnlock: () => void }) {
@@ -303,7 +302,6 @@ export function RecapModal({ open, photos, answers = [], onClose }: { open: bool
               <div className="recap-answer-text">“{a.text}”</div>
               <div className="recap-answer-meta">
                 <span>{a.player}</span>
-                <span>{a.time}</span>
               </div>
             </div>
           ))}

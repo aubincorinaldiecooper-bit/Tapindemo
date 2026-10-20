@@ -55,11 +55,14 @@ const toWav = (samples: Float32Array) => {
 
 export const micSupported = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof AudioContext !== 'undefined'
 
-export function useAnswerRecorder(onReady: (wav: ArrayBuffer) => Promise<void>) {
+export function useAnswerRecorder(onReady: (wav: ArrayBuffer, cardId: number) => Promise<void>) {
   const [state, setState] = useState<MicState>('idle')
-  const session = useRef<{ ctx: AudioContext; stream: MediaStream; node: ScriptProcessorNode; chunks: Float32Array[]; limit: number } | null>(null)
+  const session = useRef<{ ctx: AudioContext; stream: MediaStream; node: ScriptProcessorNode; chunks: Float32Array[]; limit: number; cardId: number } | null>(null)
+  // True between pointer-down and pointer-up. If the player lets go while the permission prompt is still up, don't start recording.
+  const held = useRef(false)
 
   const stop = useCallback(async () => {
+    held.current = false
     const s = session.current
     if (!s) return
     session.current = null
@@ -72,16 +75,21 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer) => Promise<void>) 
     if (samples.length < TARGET_RATE / 4) return setState('idle')
     setState('sending')
     try {
-      await onReady(toWav(samples))
+      await onReady(toWav(samples), s.cardId)
     } finally {
       setState('idle')
     }
   }, [onReady])
 
-  const start = useCallback(async () => {
-    if (session.current || !micSupported()) return
+  const start = useCallback(async (cardId: number) => {
+    if (session.current || held.current || !micSupported()) return
+    held.current = true
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
+      if (!held.current || session.current) {
+        stream.getTracks().forEach((t) => t.stop())
+        return
+      }
       const ctx = new AudioContext()
       const src = ctx.createMediaStreamSource(stream)
       const node = ctx.createScriptProcessor(4096, 1, 1)
@@ -90,9 +98,10 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer) => Promise<void>) 
       src.connect(node)
       node.connect(ctx.destination)
       const limit = window.setTimeout(() => void stop(), MAX_ANSWER_SECONDS * 1000)
-      session.current = { ctx, stream, node, chunks, limit }
+      session.current = { ctx, stream, node, chunks, limit, cardId }
       setState('recording')
     } catch {
+      held.current = false
       setState('blocked')
       window.setTimeout(() => setState('idle'), 2500)
     }

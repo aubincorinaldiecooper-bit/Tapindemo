@@ -23,6 +23,10 @@ const PHONON_URL = (process.env.PHONON_URL ?? '').replace(/\/$/, '')
 const PHONON_API_KEY = process.env.PHONON_API_KEY ?? ''
 const answersEnabled = !!PHONON_URL
 const MAX_ANSWER_BYTES = 700_000 // ~20 s of 16 kHz mono 16-bit WAV
+const MAX_ANSWER_CHARS = 400
+const MAX_ANSWERS_KEPT = 100
+// Latest recording per room wins; an older upload that finishes later must not overwrite it.
+const answerSeq = new Map<string, number>()
 
 const transcribe = async (wav: Uint8Array): Promise<string> => {
   const form = new FormData()
@@ -214,7 +218,7 @@ io.on('connection', (socket) => {
     const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
     const code = newCode()
     const room: Room = {
-      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answersEnabled },
+      state: { code, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answers: [], answersEnabled },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -297,17 +301,34 @@ io.on('connection', (socket) => {
     const bytes = Buffer.isBuffer(wav) ? new Uint8Array(wav) : wav instanceof ArrayBuffer ? new Uint8Array(wav) : null
     if (!bytes || bytes.byteLength < 1000) return ack({ ok: false, error: 'No audio' })
     if (bytes.byteLength > MAX_ANSWER_BYTES) return ack({ ok: false, error: 'Answer too long' })
+    const seq = (answerSeq.get(s.code) ?? 0) + 1
+    answerSeq.set(s.code, seq)
     s.answer = { playerId: c.playerId, text: '', pending: true }
     broadcast(c.room)
     let text = ''
     try {
-      text = await transcribe(bytes)
+      text = (await transcribe(bytes)).slice(0, MAX_ANSWER_CHARS)
     } catch (e) {
       console.warn('transcription failed', (e as Error).message)
     }
-    // The card may have moved on while Phonon was working; don't attach the answer to the next card.
-    if (c.room.state.card?.id !== cardId) return ack({ ok: false, error: 'That card is over' })
-    s.answer = text ? { playerId: c.playerId, text, pending: false } : null
+    // Re-validate: the card may have moved on, been tapped out / timed out, or a newer recording may have taken over.
+    const cur = c.room.state
+    if (answerSeq.get(cur.code) !== seq) return ack({ ok: false, error: 'A newer recording took over' })
+    if (cur.phase !== 'game' || !cur.card || cur.card.id !== cardId || cur.punishment || cur.duel || cur.turnId !== c.playerId) {
+      if (cur.answer?.pending) {
+        cur.answer = null
+        broadcast(c.room)
+      }
+      return ack({ ok: false, error: 'That card is over' })
+    }
+    cur.answer = text ? { playerId: c.playerId, text, pending: false } : null
+    if (text) {
+      const entry = { cardId, playerId: c.playerId, card: cur.card.text, text }
+      const i = cur.answers.findIndex((a) => a.cardId === cardId)
+      if (i >= 0) cur.answers[i] = entry
+      else cur.answers.push(entry)
+      if (cur.answers.length > MAX_ANSWERS_KEPT) cur.answers.splice(0, cur.answers.length - MAX_ANSWERS_KEPT)
+    }
     broadcast(c.room)
     ack(text ? { ok: true, text } : { ok: false, error: "Couldn't hear that — try again" })
   })
