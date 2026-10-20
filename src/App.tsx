@@ -126,6 +126,15 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <DotPattern className="app-dots" />
+      <div className="rotate-prompt" role="status" aria-live="polite">
+        <svg className="rotate-prompt-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="15" y="4" width="18" height="40" rx="4" />
+          <path d="M8 24a16 16 0 0 1 5-11.6M8 24l-3-3m3 3 3-3" />
+          <path d="M40 24a16 16 0 0 1-5 11.6M40 24l3 3m-3-3-3 3" />
+        </svg>
+        <strong>Rotate your phone</strong>
+        <span>Tap In is played upright.</span>
+      </div>
       <Toast message={toastMsg} />
       <AnimatePresence>{loading && <LoadingScreen key="loading" />}</AnimatePresence>
 
