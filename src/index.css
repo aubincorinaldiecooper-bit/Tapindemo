@@ -136,6 +136,7 @@
 .onb-chip.is-on { background: #052e1b; border-color: rgba(52, 211, 153, 0.5); color: #6ee7b7; }
 .onb-blocked { font-size: 0.84rem; color: #fca5a5; background: rgba(127, 29, 29, 0.25); border: 1px solid rgba(248, 113, 113, 0.35); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; text-align: left; }
 .onb-cta { font-weight: 900; }
+.onb-modal .onb-continue { background: #10b981; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3); color: #04130d; }
 .onb-skip { display: block; margin: 10px auto 0; }
 .onb-slide { touch-action: pan-y; cursor: grab; user-select: none; min-height: 210px; }
 .onb-dots { display: flex; justify-content: center; gap: 6px; margin: 6px 0 14px; }

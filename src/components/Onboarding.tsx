@@ -27,7 +27,6 @@ export function PermissionsModal({ open, onDone, onSkip }: { open: boolean; onDo
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       stream.getTracks().forEach((t) => t.stop())
       setStatus('granted')
-      window.setTimeout(onDone, 900)
     } catch {
       setStatus('blocked')
     } finally {
@@ -56,16 +55,18 @@ export function PermissionsModal({ open, onDone, onSkip }: { open: boolean; onDo
           <strong>Blocked.</strong> Allow camera &amp; mic for this site in your browser settings, then reload.
         </div>
       ) : null}
-      {status !== 'granted' && (
+      {status === 'granted' ? (
+        <Pressable className="btn-primary w-full onb-cta onb-continue" onClick={onDone}>
+          Continue
+        </Pressable>
+      ) : (
         <Pressable className="btn-primary w-full onb-cta" onClick={() => void ask()} disabled={busy}>
           {busy ? 'Asking…' : status === 'blocked' ? 'Try again' : 'Allow camera & mic'}
         </Pressable>
       )}
-      {status !== 'granted' && (
-        <button type="button" className="guest-text onb-skip" onClick={onSkip}>
-          Not now
-        </button>
-      )}
+      <button type="button" className="guest-text onb-skip" onClick={onSkip}>
+        Not now
+      </button>
     </Modal>
   )
 }
