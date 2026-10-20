@@ -1,4 +1,5 @@
 import { DotPattern } from './components/DotPattern'
+import { HowToPlayModal, PermissionsModal } from './components/Onboarding'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { avatarsList } from './data'
@@ -14,6 +15,9 @@ import { useDuelVideo } from './duel'
 import { DEFAULT_TIMER, type TimerSeconds } from './protocol'
 
 type Screen = 'title' | 'lobby' | 'game'
+const PERMS_KEY = 'tapin:perms:v1'
+const RULES_KEY = 'tapin:rules:v1'
+
 type ModalName = 'store' | 'checkout' | 'host' | 'join' | 'room' | 'proof' | 'recap' | null
 
 export default function App() {
@@ -23,6 +27,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>(() => (inviteCode || savedParty() ? 'lobby' : 'title'))
   const [modal, setModal] = useState<ModalName>(() => (inviteCode ? 'join' : null))
   const [checkoutFrom, setCheckoutFrom] = useState<ModalName>(null)
+  const [showPerms, setShowPerms] = useState(false)
+  const [showRules, setShowRules] = useState(false)
   const [mode, setMode] = useState<Mode>('classic')
   const [unlocked, setUnlocked] = useState(false)
   const [seconds, setSeconds] = useState<TimerSeconds>(DEFAULT_TIMER)
@@ -58,9 +64,11 @@ export default function App() {
       if (st.phase === 'game') {
         setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
         setScreen('game')
+        if (!localStorage.getItem(RULES_KEY)) setShowRules(true)
       } else {
         setScreen('lobby')
         setModal('room')
+        if (!localStorage.getItem(PERMS_KEY)) setShowPerms(true)
       }
     },
   )
@@ -171,6 +179,7 @@ export default function App() {
             answer={spoken}
             mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
+            onHelp={() => setShowRules(true)}
             onComplete={() => room.verdict('complete', state.card!.id)}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
@@ -184,6 +193,8 @@ export default function App() {
       </AnimatePresence>
       </div>
 
+      <PermissionsModal open={showPerms} onDone={() => { localStorage.setItem(PERMS_KEY, '1'); setShowPerms(false) }} />
+      <HowToPlayModal open={showRules} onClose={() => { localStorage.setItem(RULES_KEY, '1'); setShowRules(false) }} />
       <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
       <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
       <HostModal

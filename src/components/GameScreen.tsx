@@ -16,6 +16,7 @@ interface Props {
   turnName: string
   duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; remoteLive: boolean; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
+  onHelp: () => void
   onComplete: () => void
   // Spoken answer (Phonon). `mic` is only passed when the room has voice answers and this device can record.
   answer: { name: string; text: string; pending: boolean } | null
@@ -26,7 +27,7 @@ interface Props {
   onTapOut: () => void
 }
 
-export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onHelp, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
@@ -62,6 +63,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
     >
       <div className={`game-container ${cardClasses}${liveDuel ? ' duel-live' : ''}`}>
         <div className="game-top-bar">
+          <div className="flex gap-2">
           <Pressable className="icon-nav-btn exit-btn" title="Exit game" aria-label="Exit game" onClick={onHome}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -69,6 +71,10 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           </Pressable>
+          <Pressable className="icon-nav-btn help-btn" title="How to play" aria-label="How to play" onClick={onHelp}>
+            ?
+          </Pressable>
+          </div>
           <div className="player-header-pill">
             <img src={user.avatar} className="profile-avatar" />
             <div className="flex flex-col text-left">
