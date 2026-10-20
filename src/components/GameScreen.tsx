@@ -209,10 +209,10 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
               {duel!.remoteLive ? (
                 <span className="duel-cam-name">{rival}</span>
               ) : (
-                <>
-                  <span className="duel-skeleton-shimmer" aria-hidden />
-                  <span className="duel-skeleton-text">Waiting for user</span>
-                </>
+                <div className="duel-waiting" role="status">
+                  <span className="duel-spinner" aria-hidden />
+                  Waiting for user
+                </div>
               )}
             </div>
           )}
