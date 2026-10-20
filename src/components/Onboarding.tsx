@@ -17,7 +17,7 @@ const MicIcon = () => (
   </svg>
 )
 
-export function PermissionsModal({ open, onDone }: { open: boolean; onDone: () => void }) {
+export function PermissionsModal({ open, onDone, onSkip }: { open: boolean; onDone: () => void; onSkip: () => void }) {
   const [status, setStatus] = useState<Perm>('unknown')
   const [busy, setBusy] = useState(false)
 
@@ -49,8 +49,7 @@ export function PermissionsModal({ open, onDone }: { open: boolean; onDone: () =
       <p className="onb-sub">So you can be seen and heard in the party.</p>
       {status === 'granted' ? (
         <div className="onb-chips" role="status">
-          <span className="onb-chip is-on">Camera ✓</span>
-          <span className="onb-chip is-on">Mic ✓</span>
+          <span className="onb-chip is-on">Camera &amp; mic ✓</span>
         </div>
       ) : status === 'blocked' ? (
         <div className="onb-blocked" role="status">
@@ -62,9 +61,11 @@ export function PermissionsModal({ open, onDone }: { open: boolean; onDone: () =
           {busy ? 'Asking…' : status === 'blocked' ? 'Try again' : 'Allow camera & mic'}
         </Pressable>
       )}
-      <button type="button" className="guest-text onb-skip" onClick={onDone}>
-        {status === 'granted' ? "Let's go" : 'Not now'}
-      </button>
+      {status !== 'granted' && (
+        <button type="button" className="guest-text onb-skip" onClick={onSkip}>
+          Not now
+        </button>
+      )}
     </Modal>
   )
 }

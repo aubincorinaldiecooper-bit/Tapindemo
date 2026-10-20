@@ -193,7 +193,7 @@ export default function App() {
       </AnimatePresence>
       </div>
 
-      <PermissionsModal open={showPerms} onDone={() => { localStorage.setItem(PERMS_KEY, '1'); setShowPerms(false) }} />
+      <PermissionsModal open={showPerms} onDone={() => { localStorage.setItem(PERMS_KEY, '1'); setShowPerms(false) }} onSkip={() => setShowPerms(false)} />
       <HowToPlayModal open={showRules} onClose={() => { localStorage.setItem(RULES_KEY, '1'); setShowRules(false) }} />
       <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
       <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
