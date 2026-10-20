@@ -4,14 +4,16 @@ import { AccessToken } from 'livekit-server-sdk'
 import { Server } from 'socket.io'
 import { classicPunishmentsList } from '../../src/data'
 import { drawCard } from '../../src/game'
-import { DEFAULT_TIMER, MIN_PLAYERS, TIMER_OPTIONS, type ClientToServer, type Profile, type RoomState, type ServerToClient, type Verdict } from '../../src/protocol'
+import { CARD_SECONDS, MIN_PLAYERS, ROUND_SECONDS, type ClientToServer, type Profile, type RoomState, type ServerToClient, type Verdict } from '../../src/protocol'
 
 const PORT = Number(process.env.PORT ?? 8787)
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000
 const MAX_AVATAR_CHARS = 200_000
 const DEFAULT_ORIGINS = 'https://aubincorinaldiecooper-bit.github.io,http://localhost:5173,http://127.0.0.1:5173'
 const origins = (process.env.CORS_ORIGINS ?? DEFAULT_ORIGINS).split(',').map((s) => s.trim())
-const PUNISHMENT_TIMEOUT_MS = 90_000
+// Rounds are only 60 s, so a punishment shows briefly and the next card comes on its own.
+const PUNISHMENT_TIMEOUT_MS = 3_500
+const ROUND_MS = ROUND_SECONDS * 1000
 const DUEL_TIME_FACTOR = 3
 const LIVEKIT_URL = process.env.LIVEKIT_URL ?? ''
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY ?? ''
@@ -67,6 +69,8 @@ interface Room {
   state: RoomState
   timer?: NodeJS.Timeout
   graceTimer?: NodeJS.Timeout
+  roundTimer?: NodeJS.Timeout
+  cardStartedAt?: number
   emptySince?: number
 }
 
@@ -139,6 +143,7 @@ const dealCard = (room: Room, first = false) => {
     seconds = s.cardSeconds * DUEL_TIME_FACTOR
   }
   s.deadline = Date.now() + seconds * 1000
+  room.cardStartedAt = Date.now()
   clearTimer(room)
   room.timer = setTimeout(() => (s.duel ? duelTimeout(room) : tapOut(room)), seconds * 1000 + 250)
   broadcast(room)
@@ -172,8 +177,61 @@ const tapOut = (room: Room) => {
 }
 
 const advance = (room: Room) => {
+  if (room.state.roundOver) return endRound(room)
   nextTurn(room)
   dealCard(room)
+}
+
+// Finishing right away is worth 100, sliding to 10 at the buzzer.
+const award = (room: Room, playerId: string) => {
+  const s = room.state
+  const started = room.cardStartedAt ?? Date.now()
+  const total = Math.max(1, (s.deadline ?? Date.now()) - started)
+  const points = Math.max(10, Math.round(100 - (90 * (Date.now() - started)) / total))
+  s.scores[playerId] = (s.scores[playerId] ?? 0) + points
+  s.lastPoints = { playerId, points, seq: (s.lastPoints?.seq ?? 0) + 1 }
+}
+
+const clearRoundTimer = (room: Room) => {
+  if (room.roundTimer) clearTimeout(room.roundTimer)
+  room.roundTimer = undefined
+}
+
+const startRound = (room: Room) => {
+  const s = room.state
+  s.phase = 'game'
+  s.round += 1
+  s.scores = Object.fromEntries(s.players.map((p) => [p.id, 0]))
+  s.results = null
+  s.lastPoints = null
+  s.roundOver = false
+  s.roundEndsAt = Date.now() + ROUND_MS
+  clearRoundTimer(room)
+  room.roundTimer = setTimeout(() => {
+    room.roundTimer = undefined
+    if (s.phase !== 'game') return
+    s.roundOver = true
+    broadcast(room)
+  }, ROUND_MS)
+  if (s.round > 1) nextTurn(room)
+  dealCard(room, s.round === 1)
+}
+
+const endRound = (room: Room) => {
+  const s = room.state
+  clearTimer(room)
+  clearRoundTimer(room)
+  const best = Math.max(0, ...Object.values(s.scores))
+  s.results = { round: s.round, winners: s.players.filter((p) => (s.scores[p.id] ?? 0) === best).map((p) => p.id), scores: { ...s.scores } }
+  s.phase = 'results'
+  s.card = null
+  s.deadline = null
+  s.punishment = null
+  s.duel = null
+  s.answer = null
+  s.roundEndsAt = null
+  s.roundOver = false
+  broadcast(room)
 }
 
 const detach = (socketId: string, explicit: boolean) => {
@@ -196,6 +254,7 @@ const detach = (socketId: string, explicit: boolean) => {
     if (explicit && s.phase === 'lobby') {
       io.to(s.code).emit('room_closed', 'The host left the party')
       clearTimer(room)
+      clearRoundTimer(room)
       rooms.delete(s.code)
       return
     }
@@ -228,10 +287,10 @@ io.on('connection', (socket) => {
     if (!roomName) return ack({ ok: false, error: 'Name your party first' })
     if (!String(p.name ?? '').trim()) return ack({ ok: false, error: 'Add your nickname first' })
     const mode = p.mode === 'betchu' ? 'betchu' : 'classic'
-    const cardSeconds = (TIMER_OPTIONS as readonly number[]).includes(p.seconds) ? p.seconds : DEFAULT_TIMER
+    const cardSeconds = CARD_SECONDS
     const code = newCode()
     const room: Room = {
-      state: { code, roomName, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answers: [], answersEnabled },
+      state: { code, roomName, hostId: prof.playerId, mode, cardSeconds, phase: 'lobby', players: [{ id: prof.playerId, name: prof.name, avatar: prof.avatar, connected: true }], card: null, turnId: null, deadline: null, punishment: null, duel: null, answer: null, answers: [], answersEnabled, round: 0, roundEndsAt: null, roundOver: false, scores: {}, lastPoints: null, results: null },
     }
     rooms.set(code, room)
     socketRoom.set(socket.id, { code, playerId: prof.playerId })
@@ -273,9 +332,29 @@ io.on('connection', (socket) => {
     const c = current()
     if (!c || c.playerId !== c.room.state.hostId || c.room.state.phase !== 'lobby') return
     if (c.room.state.players.filter((p) => p.connected).length < MIN_PLAYERS) return
-    c.room.state.phase = 'game'
+    c.room.state.round = 0
     c.room.state.turnId = c.room.state.hostId
-    dealCard(c.room, true)
+    startRound(c.room)
+  })
+
+  socket.on('next_round', () => {
+    const c = current()
+    if (!c || c.playerId !== c.room.state.hostId || c.room.state.phase !== 'results') return
+    if (c.room.state.players.filter((p) => p.connected).length < MIN_PLAYERS) return
+    startRound(c.room)
+  })
+
+  socket.on('end_game', () => {
+    const c = current()
+    if (!c || c.playerId !== c.room.state.hostId || c.room.state.phase !== 'results') return
+    const s = c.room.state
+    s.phase = 'lobby'
+    s.round = 0
+    s.results = null
+    s.scores = {}
+    s.lastPoints = null
+    s.turnId = null
+    broadcast(c.room)
   })
 
   socket.on('verdict', (v: Verdict, cardId: number) => {
@@ -293,6 +372,7 @@ io.on('connection', (socket) => {
       if (v === 'tapout') return punish(c.room, c.playerId)
       if (v === 'complete' && !s.duel.done.includes(c.playerId)) {
         s.duel.done.push(c.playerId)
+        award(c.room, c.playerId)
         if (s.duel.done.length === 2) return advance(c.room)
         broadcast(c.room)
       }
@@ -301,7 +381,10 @@ io.on('connection', (socket) => {
     const isTurn = c.playerId === s.turnId
     if (!isTurn && !isHost) return
     if (v === 'tapout') tapOut(c.room)
-    else if (v === 'complete' || v === 'skip') advance(c.room)
+    else if (v === 'complete') {
+      award(c.room, s.turnId!)
+      advance(c.room)
+    } else if (v === 'skip') advance(c.room)
   })
 
   socket.on('answer_audio', async (cardId, wav, ack) => {
@@ -381,6 +464,7 @@ setInterval(() => {
   for (const [code, room] of rooms) {
     if (room.emptySince && now - room.emptySince > EMPTY_ROOM_TTL_MS) {
       clearTimer(room)
+      clearRoundTimer(room)
       rooms.delete(code)
     }
   }

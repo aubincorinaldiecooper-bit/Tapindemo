@@ -121,6 +121,8 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
   )
   const joinRoom = useCallback((code: string, name: string, avatar: string) => call('join_room', { playerId: getPlayerId(), name, avatar, code }), [call])
   const startGame = useCallback(() => socketRef.current?.emit('start_game'), [])
+  const nextRound = useCallback(() => socketRef.current?.emit('next_round'), [])
+  const endGame = useCallback(() => socketRef.current?.emit('end_game'), [])
   const verdict = useCallback((v: Verdict, cardId: number) => socketRef.current?.emit('verdict', v, cardId), [])
   const punishmentDone = useCallback(() => socketRef.current?.emit('punishment_done'), [])
   const answerAudio = useCallback(
@@ -155,7 +157,7 @@ export function useRoom(onClosed: (reason: string) => void, onState: (state: Roo
     setState(null)
   }, [])
 
-  return { state, me, connected, createRoom, joinRoom, startGame, verdict, punishmentDone, answerAudio, duelToken, leaveRoom }
+  return { state, me, connected, createRoom, joinRoom, startGame, nextRound, endGame, verdict, punishmentDone, answerAudio, duelToken, leaveRoom }
 }
 
 const secondsUntil = (deadline: number) => Math.max(0, Math.ceil((deadline - Date.now()) / 1000))

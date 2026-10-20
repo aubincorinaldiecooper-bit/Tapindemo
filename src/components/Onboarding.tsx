@@ -72,8 +72,9 @@ export function PermissionsModal({ open, onDone, onSkip }: { open: boolean; onDo
 }
 
 const SLIDES = [
+  { art: '⏱️', title: 'Beat the clock', text: 'Every card gets 10 seconds, every round 60. Finish fast to score up to 100 — top score when the clock hits 0 wins.' },
   { art: '👉', title: 'Swipe to decide', text: 'Swipe the card right for I did it, left to Tap out. The orange stroke around the card is your timer.' },
-  { art: '😈', title: 'Tap out = punishment', text: 'Chicken out and the deck hands you a punishment. Everyone waits until you press Done.' },
+  { art: '😈', title: 'Tap out = punishment', text: 'Chicken out and you score nothing — plus a punishment from the deck.' },
   { art: '🎥', title: 'Head to Head', text: 'Two phones face off on camera. Your rival sees you, you see them — first to tap out loses.' },
   { art: '🎙️', title: 'Hold to answer', text: 'On question cards, hold the mic and speak. Your words show up on every phone and in the Party Recap.' },
   { art: '🚨', title: 'Snitch & Proof', text: 'Call out a cheater with Snitch, or snap Proof when you pull a dare off. Both live at the bottom of the screen.' },

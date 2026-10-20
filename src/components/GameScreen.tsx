@@ -17,6 +17,13 @@ interface Props {
   duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; remoteLive: boolean; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
   onHelp: () => void
+  round: {
+    number: number
+    secondsLeft: number
+    over: boolean
+    standings: { id: string; name: string; avatar: string; points: number; me: boolean }[]
+    lastPoints: { playerId: string; points: number; seq: number } | null
+  } | null
   onComplete: () => void
   // Spoken answer (Phonon). `mic` is only passed when the room has voice answers and this device can record.
   answer: { name: string; text: string; pending: boolean } | null
@@ -27,7 +34,7 @@ interface Props {
   onTapOut: () => void
 }
 
-export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onHelp, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
+export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, duel, answer, mic, onHome, onHelp, round, onComplete, onSnitch, onProof, onNext, onTapOut }: Props) {
   const isBetchu = mode === 'betchu'
   const isWildcard = card.kind === 'wildcard'
   const isShotOClock = card.kind === 'shotoclock'
@@ -89,6 +96,38 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
             </div>
           )}
         </div>
+
+        {round && (
+          <div className="round-strip">
+            <div className={`round-clock${round.over ? ' is-over' : round.secondsLeft <= 10 ? ' is-urgent' : ''}`}>
+              <span className="round-label">Round {round.number}</span>
+              <span className="round-time">{round.over ? 'Last card' : `${Math.floor(round.secondsLeft / 60)}:${String(round.secondsLeft % 60).padStart(2, '0')}`}</span>
+            </div>
+            {!liveDuel && (
+              <div className="round-scores">
+                {round.standings.map((p) => (
+                  <motion.div key={p.id} layout className={`round-score${p.me ? ' is-me' : ''}`}>
+                    <img src={p.avatar} alt="" />
+                    <span>{p.points}</span>
+                    <AnimatePresence>
+                      {round.lastPoints?.playerId === p.id && (
+                        <motion.span
+                          key={round.lastPoints.seq}
+                          className="round-plus"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: [0, 1, 1, 0], y: [6, -8, -12, -16] }}
+                          transition={{ duration: 1.6 }}
+                        >
+                          +{round.lastPoints.points}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className={`game-stage${liveDuel ? ' duel-live-stage' : ''}`}>
           {/* oxlint-disable react/refs -- ref objects are passed down as props, not read during render */}
@@ -288,7 +327,7 @@ export function PunishmentOverlay({ text, playerName, canDismiss, onDone }: Puni
           ) : (
             <motion.div className="turn-wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
               <span className="turn-wait-dot" />
-              Waiting for {playerName}
+              Next card in a moment…
             </motion.div>
           )}
         </motion.div>

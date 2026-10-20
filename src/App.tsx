@@ -1,5 +1,6 @@
 import { DotPattern } from './components/DotPattern'
 import { HowToPlayModal, PermissionsModal } from './components/Onboarding'
+import { WinnerModal } from './components/Winner'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { avatarsList } from './data'
@@ -12,7 +13,7 @@ import { LoadingScreen, LobbyScreen, TitleScreen } from './components/Screens'
 import { Toast } from './components/ui'
 import { roomFromUrl, savedParty, useDeadline, useRoom } from './net'
 import { useDuelVideo } from './duel'
-import { DEFAULT_TIMER, type TimerSeconds } from './protocol'
+import { DEFAULT_TIMER, FREE_ROUNDS, type TimerSeconds } from './protocol'
 
 type Screen = 'title' | 'lobby' | 'game'
 const PERMS_KEY = 'tapin:perms:v1'
@@ -61,10 +62,10 @@ export default function App() {
           .map((a) => ({ player: st.players.find((p) => p.id === a.playerId)?.name ?? 'Someone', card: a.card, text: a.text }))
           .reverse()
       )
-      if (st.phase === 'game') {
+      if (st.phase === 'game' || st.phase === 'results') {
         setModal((m) => (m === 'room' || m === 'join' || m === 'host' ? null : m))
         setScreen('game')
-        if (!localStorage.getItem(RULES_KEY)) setShowRules(true)
+        if (st.phase === 'game' && !localStorage.getItem(RULES_KEY)) setShowRules(true)
       } else {
         setScreen('lobby')
         setModal('room')
@@ -81,6 +82,9 @@ export default function App() {
   }, [])
 
   const timeLeft = useDeadline(state?.deadline ?? null, !!state?.punishment)
+  const roundLeft = useDeadline(state?.roundEndsAt ?? null, false)
+  // Set when the host hits a paid "Another round": the purchase continues straight into it.
+  const pendingAgain = useRef(false)
   const isMyTurn = !!state && state.turnId === meId
   const turnPlayer = state?.players.find((p) => p.id === state.turnId)
   const punished = state?.punishment ? state.players.find((p) => p.id === state.punishment?.playerId) : undefined
@@ -88,6 +92,12 @@ export default function App() {
   const duel = state?.card?.kind === 'duel' && state.duel ? state.duel : null
   const iAmIn = !!duel && !!meId && duel.players.includes(meId)
   const video = useDuelVideo(screen === 'game' && !!duel, state?.card?.id ?? 0, iAmIn, room.duelToken)
+  const standings = state
+    ? state.players
+        .map((p) => ({ id: p.id, name: p.name, avatar: p.avatar || avatarsList[0], points: state.scores[p.id] ?? 0, me: p.id === meId }))
+        .sort((a, b) => b.points - a.points)
+    : []
+  const roundLocked = !!state && state.round >= FREE_ROUNDS && !unlocked
   const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? 'Someone'
 
   // cardId is the card that was showing when the player pressed the mic, not whatever is showing on release.
@@ -102,6 +112,14 @@ export default function App() {
   const spoken = state?.answer ? { name: nameOf(state.answer.playerId), text: state.answer.text, pending: state.answer.pending } : null
 
   const confirmPurchase = () => {
+    if (pendingAgain.current) {
+      pendingAgain.current = false
+      setUnlocked(true)
+      setModal(null)
+      toast("🎉 I Betchu Won't unlocked — next round!")
+      room.nextRound()
+      return
+    }
     setUnlocked(true)
     setMode('betchu')
     setModal(null)
@@ -181,6 +199,7 @@ export default function App() {
             mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
             onHelp={() => setShowRules(true)}
+            round={state.phase === 'game' ? { number: state.round, secondsLeft: roundLeft, over: state.roundOver, standings, lastPoints: state.lastPoints } : null}
             onComplete={() => room.verdict('complete', state.card!.id)}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
@@ -196,7 +215,7 @@ export default function App() {
 
       <PermissionsModal open={showPerms} onDone={() => { localStorage.setItem(PERMS_KEY, '1'); setShowPerms(false) }} onSkip={() => setShowPerms(false)} />
       <HowToPlayModal open={showRules} onClose={() => { localStorage.setItem(RULES_KEY, '1'); setShowRules(false) }} />
-      <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => setModal(null)} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
+      <StoreModal open={modal === 'store' || (modal === 'checkout' && checkoutFrom === 'store')} inert={modal === 'checkout'} onClose={() => { pendingAgain.current = false; setModal(null) }} onUnlock={() => { setCheckoutFrom('store'); setModal('checkout') }} />
       <CheckoutModal open={modal === 'checkout'} onCancel={() => setModal(checkoutFrom)} onConfirm={confirmPurchase} />
       <HostModal
         open={modal === 'host' || (modal === 'checkout' && checkoutFrom === 'host')}
@@ -243,6 +262,21 @@ export default function App() {
         }}
       />
       <RecapModal open={modal === 'recap'} photos={photos} answers={answers} onClose={() => setModal(null)} />
+      <WinnerModal
+        open={state?.phase === 'results'}
+        inert={modal !== null}
+        results={state?.results ?? null}
+        players={state?.players ?? []}
+        isHost={isHost}
+        locked={roundLocked}
+        onAgain={() => {
+          if (roundLocked) {
+            pendingAgain.current = true
+            setModal('store')
+          } else room.nextRound()
+        }}
+        onEnd={room.endGame}
+      />
       <PunishmentOverlay
         text={state?.punishment?.text ?? null}
         playerName={punished?.name ?? 'Someone'}

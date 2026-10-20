@@ -4,7 +4,7 @@ import type { Mode } from '../game'
 import { AvatarPicker } from './AvatarPicker'
 import { avatarsList } from '../data'
 import { shareLinkFor } from '../net'
-import { MIN_PLAYERS, TIMER_OPTIONS, type RoomState, type TimerSeconds } from '../protocol'
+import { MIN_PLAYERS, ROUND_SECONDS, type RoomState, type TimerSeconds } from '../protocol'
 import { Modal, Pressable } from './ui'
 
 export interface Player {
@@ -126,7 +126,7 @@ export function HostModal({ open, inert, ...props }: HostProps) {
   )
 }
 
-function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
+function HostBody({ mode, unlocked, user, onAvatar, onMode, onLockedBetchu, onCancel, onCreate, toast }: Omit<HostProps, 'open' | 'inert' | 'onName'>) {
   const [nameInput, setNameInput] = useState(user.name === 'Player' ? '' : user.name)
   const [roomName, setRoomName] = useState('')
   const [missing, setMissing] = useState<{ name?: boolean; room?: boolean }>({})
@@ -169,14 +169,7 @@ function HostBody({ mode, unlocked, user, onAvatar, onMode, seconds, onSeconds, 
                 </motion.button>
               ))}
             </div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left mb-1 mt-4">Seconds per card</label>
-            <div className="mode-toggle timer-toggle">
-              {TIMER_OPTIONS.map((t) => (
-                <motion.button key={t} type="button" whileTap={{ scale: 0.96 }} className={`mode-toggle-option ${seconds === t ? 'mode-toggle-active' : ''}`} onClick={() => onSeconds(t)}>
-                  {t}s
-                </motion.button>
-              ))}
-            </div>
+            <div className="host-round-note">10 s per card · 60 s rounds · fastest scores most</div>
             <Pressable onClick={() => void create()} disabled={busy} className="btn-primary w-full text-base py-3">
               {busy ? 'Creating…' : 'Create Party Link'}
             </Pressable>
@@ -391,7 +384,7 @@ export function RoomLobbyModal({ open, state, meId, onStart, onLeave, toast }: R
             Share party link
           </Pressable>
           <div className="text-xs font-semibold text-gray-300 mb-2">
-            {state.players.length} {state.players.length === 1 ? 'player' : 'players'} · {state.mode === 'betchu' ? "🔥 I Betchu Won't" : '🎉 Classic'} · {state.cardSeconds}s cards
+            {state.players.length} {state.players.length === 1 ? 'player' : 'players'} · {state.mode === 'betchu' ? "🔥 I Betchu Won't" : '🎉 Classic'} · {state.cardSeconds}s cards · {ROUND_SECONDS}s rounds
           </div>
           <div className="flex flex-col gap-2 mb-3 player-list">
             {state.players.map((p) => (

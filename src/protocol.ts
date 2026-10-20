@@ -1,6 +1,6 @@
 import type { DrawnCard, Mode } from './game'
 
-export type Phase = 'lobby' | 'game'
+export type Phase = 'lobby' | 'game' | 'results'
 
 export interface RoomPlayer {
   id: string
@@ -28,6 +28,14 @@ export interface RoomState {
   // Every completed spoken answer this party, one per card (re-recording replaces). Survives reloads; feeds the Recap.
   answers: { cardId: number; playerId: string; card: string; text: string }[]
   answersEnabled: boolean
+  // Timed rounds: 60 s of back-to-back cards, points for speed, winner at the end.
+  round: number
+  roundEndsAt: number | null
+  // The round clock hit 0; the card on the table still finishes, then results show.
+  roundOver: boolean
+  scores: Record<string, number>
+  lastPoints: { playerId: string; points: number; seq: number } | null
+  results: { round: number; winners: string[]; scores: Record<string, number> } | null
 }
 
 export interface DuelAccess {
@@ -41,6 +49,9 @@ export type TimerSeconds = (typeof TIMER_OPTIONS)[number]
 export const DEFAULT_TIMER: TimerSeconds = 10
 
 export const MIN_PLAYERS = 2
+export const CARD_SECONDS = 10
+export const ROUND_SECONDS = 60
+export const FREE_ROUNDS = 2
 
 export type Verdict = 'complete' | 'tapout' | 'skip'
 
@@ -58,6 +69,8 @@ export interface ClientToServer {
   join_room: (p: Profile & { code: string }, ack: (r: JoinAck) => void) => void
   leave_room: () => void
   start_game: () => void
+  next_round: () => void
+  end_game: () => void
   verdict: (v: Verdict, cardId: number) => void
   punishment_done: () => void
   // 16 kHz mono 16-bit WAV of the player's spoken answer to the current card.
