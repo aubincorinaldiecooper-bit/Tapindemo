@@ -162,10 +162,7 @@ export default function App() {
             answer={spoken}
             mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}
-            onComplete={() => {
-              toast('✨ Action completed successfully!')
-              room.verdict('complete', state.card!.id)
-            }}
+            onComplete={() => room.verdict('complete', state.card!.id)}
             onSnitch={() => toast('🚨 Snitch Mode active! Challenge registered.')}
             onProof={() => setModal('proof')}
             onNext={() => {

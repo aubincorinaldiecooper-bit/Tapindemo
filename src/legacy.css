@@ -1372,8 +1372,7 @@
                 align-items: stretch;
             }
             .game-top-bar { grid-column: 1 / -1; margin-bottom: 20px; }
-            .game-container > .card-stage,
-            .game-container > div:nth-of-type(2) { grid-column: 2; }
+            .game-container > .game-stage { grid-column: 2; min-height: 0; }
             .main-game-card { min-height: 560px; }
             .dare-box { font-size: 2rem; }
             .actions-secondary-row {
@@ -1520,5 +1519,4 @@
 .duel-video-local { position: absolute; right: 10px; bottom: 10px; width: 30%; height: auto; aspect-ratio: 3 / 4; border-radius: 12px; border: 2px solid #26262c; }
 .duel-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; color: #a1a1aa; font-weight: 600; font-size: 0.9rem; background: rgba(10, 10, 11, 0.55); }
 .spice-duel { color: #f97316; }
-.duel-active-card { outline: 1px solid rgba(249, 115, 22, 0.4); }
 .game-container.duel-active-card .dare-box { font-size: 1.05rem; }

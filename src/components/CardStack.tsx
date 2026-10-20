@@ -1,8 +1,6 @@
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
-import { useRef, type ReactNode } from 'react'
+import { useRef, type MouseEvent, type ReactNode } from 'react'
 
-// Adapted from the 21st.dev "image-stack-carousel" SwipeCards: 3D tilt while dragging, spring snap-back,
-// cards fanned behind the front one. The front card is the live game card; swiping it is the verdict.
 const settings = {
   swipeThreshold: 120,
   stackRotation: 5,
@@ -17,11 +15,15 @@ interface Props {
   children: ReactNode
   className?: string
   canAct: boolean
+  /** 0..1 share of the turn timer still left; drawn as a stroke that unwinds around the card. */
+  timeFraction: number
+  urgent: boolean
   onSwipeRight: () => void
   onSwipeLeft: () => void
+  onTap?: () => void
 }
 
-export function CardStack({ children, className = '', canAct, onSwipeRight, onSwipeLeft }: Props) {
+export function CardStack({ children, className = '', canAct, timeFraction, urgent, onSwipeRight, onSwipeLeft, onTap }: Props) {
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const rotateX = useTransform(y, [-200, 200], [settings.tiltStrength, -settings.tiltStrength])
@@ -40,6 +42,17 @@ export function CardStack({ children, className = '', canAct, onSwipeRight, onSw
     }, 0)
   }
 
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (dragged.current) {
+      e.stopPropagation()
+      e.preventDefault()
+      return
+    }
+    if (onTap && !(e.target as HTMLElement).closest('button')) onTap()
+  }
+
+  const pct = Math.max(0, Math.min(1, timeFraction)) * 100
+
   return (
     <div className="card-stage" style={{ perspective: 1200 }}>
       {Array.from({ length: settings.behind }, (_, i) => i + 1).map((i) => (
@@ -53,6 +66,7 @@ export function CardStack({ children, className = '', canAct, onSwipeRight, onSw
           style={{ zIndex: settings.behind - i }}
         />
       ))}
+
       <motion.div
         className={`main-game-card ${className}`}
         style={{ x, y, rotateX, rotateY, zIndex: settings.behind + 1 }}
@@ -67,15 +81,13 @@ export function CardStack({ children, className = '', canAct, onSwipeRight, onSw
           dragged.current = true
         }}
         onDragEnd={handleDragEnd}
-        onClickCapture={(e) => {
-          if (dragged.current) {
-            e.stopPropagation()
-            e.preventDefault()
-          }
-        }}
+        onClickCapture={handleClick}
         whileHover={canAct ? { scale: 1.02 } : {}}
       >
         {children}
+        <svg className={`timer-ring${urgent ? ' is-urgent' : ''}`} aria-hidden>
+          <rect pathLength={100} strokeDasharray="100" style={{ strokeDashoffset: 100 - pct }} />
+        </svg>
       </motion.div>
     </div>
   )
