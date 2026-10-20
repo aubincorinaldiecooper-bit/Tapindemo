@@ -46,12 +46,7 @@ export function PermissionsModal({ open, onDone }: { open: boolean; onDone: () =
         </motion.div>
       </div>
       <h2 className="onb-title">Camera &amp; mic</h2>
-      <p className="onb-sub">Tap In is played face to face. Your phone asks once, right now — never in the middle of a dare.</p>
-      <ul className="onb-list">
-        <li><strong>Head to Head</strong> — you and your rival see each other live.</li>
-        <li><strong>Hold to answer</strong> — say your answer, everyone reads it.</li>
-        <li><strong>Proof</strong> — snap a photo when you pull a dare off.</li>
-      </ul>
+      <p className="onb-sub">So you can be seen and heard in the party.</p>
       {status === 'granted' ? (
         <div className="onb-chips" role="status">
           <span className="onb-chip is-on">Camera ✓</span>
@@ -59,7 +54,7 @@ export function PermissionsModal({ open, onDone }: { open: boolean; onDone: () =
         </div>
       ) : status === 'blocked' ? (
         <div className="onb-blocked" role="status">
-          <strong>Blocked.</strong> Allow camera and microphone for this site in your browser settings, then reload. You can still play — duels and spoken answers will be off for you.
+          <strong>Blocked.</strong> Allow camera &amp; mic for this site in your browser settings, then reload.
         </div>
       ) : null}
       {status !== 'granted' && (
