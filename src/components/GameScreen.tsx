@@ -206,10 +206,14 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
           {liveDuel && (
             <div className={`duel-cam duel-cam-remote${duel!.remoteLive ? ' is-live' : ' is-loading'}`}>
               <video ref={duel!.remoteVideo} className="duel-video" autoPlay playsInline />
-              {!duel!.remoteLive && (
-                <span className="duel-skeleton-shimmer" aria-hidden />
+              {duel!.remoteLive ? (
+                <span className="duel-cam-name">{rival}</span>
+              ) : (
+                <>
+                  <span className="duel-skeleton-shimmer" aria-hidden />
+                  <span className="duel-skeleton-text">Waiting for user</span>
+                </>
               )}
-              <span className="duel-cam-name">{rival}</span>
             </div>
           )}
           {/* oxlint-enable react/refs */}
