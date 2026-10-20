@@ -103,9 +103,13 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer, cardId: number) =>
       session.current = { ctx, stream, node, chunks, limit, cardId }
       setState('recording')
     } catch {
-      if (holdToken.current === token) held.current = false
+      // A rejection from an older hold must not touch the hold that replaced it.
+      if (holdToken.current !== token) return
+      held.current = false
       setState('blocked')
-      window.setTimeout(() => setState('idle'), 2500)
+      window.setTimeout(() => {
+        if (holdToken.current === token) setState('idle')
+      }, 2500)
     }
   }, [stop])
 
