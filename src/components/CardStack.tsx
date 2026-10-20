@@ -54,7 +54,7 @@ export function CardStack({ children, className = '', canAct, timeFraction, urge
   const pct = Math.max(0, Math.min(1, timeFraction)) * 100
 
   return (
-    <motion.div layout className="card-stage" style={{ perspective: 1200 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }}>
+    <div className="card-stage" style={{ perspective: 1200 }}>
       {Array.from({ length: settings.behind }, (_, i) => i + 1).map((i) => (
         <motion.div
           key={i}
@@ -89,6 +89,6 @@ export function CardStack({ children, className = '', canAct, timeFraction, urge
           <rect pathLength={100} strokeDasharray="100" style={{ strokeDashoffset: 100 - pct }} />
         </svg>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
