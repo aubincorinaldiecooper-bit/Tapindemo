@@ -73,8 +73,9 @@
    Same top/bottom stack on desktop, sized to fit the viewport beside the Snitch/Proof rail. */
 .duel-live-stage { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; align-content: center; justify-items: center; gap: 12px; container-type: size; }
 /* Two tiles + the card must fit the stage on short screens (375x667, short laptops): size the tiles from the stage
-   height (cqh), leaving ~270px for the card and gaps, and never wider than the stage. */
-.duel-live-stage > .duel-cam { width: min(100%, calc((100cqh - 270px) / 2 * 16 / 9)); }
+   height (cqh), leaving ~270px for the card and gaps, never wider than the stage and never below 200px (a landscape phone
+   overflows the stage instead of losing the cameras). */
+.duel-live-stage > .duel-cam { width: min(100%, max(200px, calc((100cqh - 270px) / 2 * 16 / 9))); }
 .duel-live-stage > .card-stage { margin: 0; }
 .duel-cam { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; background: #131316; border: 1px solid #2a2a30; }
 .duel-cam .duel-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #0a0a0b; }
@@ -93,7 +94,7 @@
 
 @media (min-width: 1024px) {
   .duel-live-stage { gap: 18px; }
-  .duel-live-stage > .duel-cam { width: min(100%, 420px, calc((100cqh - 270px) / 2 * 16 / 9)); border-radius: 20px; }
+  .duel-live-stage > .duel-cam { width: min(100%, 420px, max(200px, calc((100cqh - 270px) / 2 * 16 / 9))); border-radius: 20px; }
 
   /* Snitch / Proof / Skip rail: real buttons, not faint chips. */
   .game-container .actions-secondary-row .action-chip-btn { width: 184px; padding: 14px 18px; border-radius: 16px; background: #1a1a1f; border: 1px solid rgba(255, 255, 255, 0.22); color: #fff; font-size: 1.05rem; font-weight: 700; transition: border-color 160ms, background 160ms, transform 160ms; }
