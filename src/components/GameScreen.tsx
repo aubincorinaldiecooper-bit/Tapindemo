@@ -14,7 +14,7 @@ interface Props {
   user: Player
   isMyTurn: boolean
   turnName: string
-  duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
+  duel: { names: [string, string]; iAmIn: boolean; iAmDone: boolean; status: DuelStatus; remoteLive: boolean; localVideo: RefObject<HTMLVideoElement | null>; remoteVideo: RefObject<HTMLVideoElement | null> } | null
   onHome: () => void
   onComplete: () => void
   // Spoken answer (Phonon). `mic` is only passed when the room has voice answers and this device can record.
@@ -87,18 +87,22 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
         <div className={`game-stage${liveDuel ? ' duel-live-stage' : ''}`}>
           {/* oxlint-disable react/refs -- ref objects are passed down as props, not read during render */}
           {liveDuel && (
-              <div className="duel-cam duel-cam-remote">
-                <video ref={duel!.remoteVideo} className="duel-video" autoPlay playsInline />
-                <span className="duel-cam-name">{rival}</span>
-                {duel!.status !== 'live' && (
-                  <div className="duel-overlay">
-                    {duel!.status === 'connecting' && 'Connecting cameras…'}
-                    {duel!.status === 'no-camera' && 'Camera blocked — allow camera access to duel'}
-                    {duel!.status === 'error' && 'Video unavailable'}
-                    {duel!.status === 'idle' && 'Live video'}
-                  </div>
-                )}
-              </div>
+            <AnimatePresence>
+              {duel!.remoteLive && (
+                <motion.div
+                  key="rival"
+                  layout
+                  className="duel-cam duel-cam-remote"
+                  initial={{ opacity: 0, scale: 0.86, y: -24 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                >
+                  <video ref={duel!.remoteVideo} className="duel-video" autoPlay playsInline />
+                  <span className="duel-cam-name">{rival}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         <AnimatePresence mode="wait">
           <CardStack
@@ -206,11 +210,18 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
           </CardStack>
         </AnimatePresence>
           {liveDuel && (
-            <div className="duel-cam duel-cam-local">
+            <motion.div layout className="duel-cam duel-cam-local" transition={{ type: 'spring', stiffness: 260, damping: 26 }}>
               <video ref={duel!.localVideo} className="duel-video" autoPlay playsInline muted />
               <span className="duel-cam-name">{user.name}</span>
               <span className="duel-cam-you">You</span>
-            </div>
+              {!duel!.remoteLive && (
+                <div className="duel-overlay duel-waiting">
+                  {duel!.status === 'no-camera' && 'Camera blocked — allow camera access to duel'}
+                  {duel!.status === 'error' && 'Video unavailable'}
+                  {(duel!.status === 'connecting' || duel!.status === 'idle' || duel!.status === 'live') && `Waiting for ${rival}…`}
+                </div>
+              )}
+            </motion.div>
           )}
           {/* oxlint-enable react/refs */}
         </div>

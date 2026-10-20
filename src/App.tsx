@@ -158,7 +158,7 @@ export default function App() {
             user={user}
             isMyTurn={isMyTurn}
             turnName={turnPlayer?.name ?? 'Someone'}
-            duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
+            duel={duel ? { names: [nameOf(duel.players[0]), nameOf(duel.players[1])], iAmIn, iAmDone: !!meId && duel.done.includes(meId), status: video.status, remoteLive: video.remoteLive, localVideo: video.localRef, remoteVideo: video.remoteRef } : null}
             answer={spoken}
             mic={state.answersEnabled && micSupported() ? { state: recorder.state, onStart: () => state.card && void recorder.start(state.card.id), onStop: () => void recorder.stop() } : null}
             onHome={leaveGame}

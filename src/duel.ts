@@ -10,7 +10,13 @@ export function useDuelVideo(active: boolean, cardId: number, publish: boolean, 
   const localRef = useRef<HTMLVideoElement>(null)
   const remoteRef = useRef<HTMLVideoElement>(null)
   const [status, setStatus] = useState<DuelStatus>('idle')
+  const [remoteTrack, setRemoteTrack] = useState<RemoteTrack | null>(null)
   const [attempt, setAttempt] = useState(0)
+
+  // The rival's tile mounts only once their video arrives, so attach after that render, not on subscribe.
+  useEffect(() => {
+    if (remoteTrack && remoteRef.current) remoteTrack.attach(remoteRef.current)
+  }, [remoteTrack])
 
   useEffect(() => {
     if (!active) return
@@ -18,11 +24,14 @@ export function useDuelVideo(active: boolean, cardId: number, publish: boolean, 
     let retry: number | undefined
     const room = new Room({ adaptiveStream: true, dynacast: true })
     const attachRemote = (track: RemoteTrack) => {
-      if (track.kind === Track.Kind.Video && remoteRef.current) track.attach(remoteRef.current)
+      if (track.kind === Track.Kind.Video) setRemoteTrack(track)
       if (track.kind === Track.Kind.Audio) track.attach()
     }
     room.on(RoomEvent.TrackSubscribed, attachRemote)
-    room.on(RoomEvent.TrackUnsubscribed, (track) => track.detach())
+    room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      track.detach()
+      if (track.kind === Track.Kind.Video) setRemoteTrack((t) => (t === track ? null : t))
+    })
     ;(async () => {
       await Promise.resolve()
       if (cancelled) return
@@ -55,9 +64,10 @@ export function useDuelVideo(active: boolean, cardId: number, publish: boolean, 
     return () => {
       cancelled = true
       window.clearTimeout(retry)
+      setRemoteTrack(null)
       room.disconnect()
     }
   }, [active, cardId, publish, getAccess, attempt])
 
-  return { localRef, remoteRef, status: active ? status : 'idle' }
+  return { localRef, remoteRef, status: active ? status : 'idle', remoteLive: active && remoteTrack !== null }
 }
