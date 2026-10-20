@@ -87,7 +87,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1000;
+            z-index: 1200;
             text-align: center;
             padding: 24px;
             box-sizing: border-box;
@@ -218,7 +218,7 @@
             box-sizing: border-box;
             text-align: center;
             position: relative;
-            background: #08080c;
+            background: transparent;
         }
 
         .game-top-bar {
@@ -832,7 +832,7 @@
         }
 
         body { background-color: var(--bg); }
-        .title-screen-container { background: var(--bg); }
+        .title-screen-container { background: transparent; }
 
         .title-main-text {
             color: var(--text);
@@ -1258,7 +1258,7 @@
         .btn-primary:hover:not(:disabled),
         .btn-betchu-mode:hover,
         .btn-store-gold:hover { transform: none; }
-        .party-feed-container { background: var(--bg); }
+        .party-feed-container { background: transparent; }
         .party-feed-header {
             font-size: 2.4rem;
             text-shadow: none;

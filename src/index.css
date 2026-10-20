@@ -97,3 +97,7 @@
   .game-container .actions-secondary-row .action-chip-btn:hover { border-color: rgba(255, 255, 255, 0.45); background: #202026; }
   .game-container .actions-secondary-row .action-chip-btn span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); font-size: 1.1rem; }
 }
+
+/* Magic UI DotPattern as the app background: fixed behind every screen, faded out from the centre like the demo's radial mask. */
+.dot-pattern { pointer-events: none; position: absolute; inset: 0; width: 100%; height: 100%; color: rgba(163, 163, 163, 0.8); }
+#root > .app-dots { position: fixed; z-index: -1; mask-image: radial-gradient(ellipse 60% 55% at center, white, transparent); -webkit-mask-image: radial-gradient(ellipse 60% 55% at center, white, transparent); }

@@ -55,7 +55,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
 
   return (
     <motion.div
-      className="absolute inset-0 z-[1100] bg-[#08080c] flex justify-center items-center"
+      className="absolute inset-0 z-[1100] flex justify-center items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

@@ -1,3 +1,4 @@
+import { DotPattern } from './components/DotPattern'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { avatarsList } from './data'
@@ -124,6 +125,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <DotPattern className="app-dots" />
       <Toast message={toastMsg} />
       <AnimatePresence>{loading && <LoadingScreen key="loading" />}</AnimatePresence>
 
