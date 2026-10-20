@@ -207,10 +207,7 @@ export function GameScreen({ mode, card, timeLeft, user, isMyTurn, turnName, due
             <div className={`duel-cam duel-cam-remote${duel!.remoteLive ? ' is-live' : ' is-loading'}`}>
               <video ref={duel!.remoteVideo} className="duel-video" autoPlay playsInline />
               {!duel!.remoteLive && (
-                <>
-                  <span className="duel-skeleton-shimmer" aria-hidden />
-                  <span className="duel-skeleton-pill">Waiting for {rival}…</span>
-                </>
+                <span className="duel-skeleton-shimmer" aria-hidden />
               )}
               <span className="duel-cam-name">{rival}</span>
             </div>
