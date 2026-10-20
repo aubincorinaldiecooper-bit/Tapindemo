@@ -60,6 +60,7 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer, cardId: number) =>
   const session = useRef<{ ctx: AudioContext; stream: MediaStream; node: ScriptProcessorNode; chunks: Float32Array[]; limit: number; cardId: number } | null>(null)
   // True between pointer-down and pointer-up. If the player lets go while the permission prompt is still up, don't start recording.
   const held = useRef(false)
+  const holdToken = useRef(0)
 
   const stop = useCallback(async () => {
     held.current = false
@@ -84,9 +85,10 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer, cardId: number) =>
   const start = useCallback(async (cardId: number) => {
     if (session.current || held.current || !micSupported()) return
     held.current = true
+    const token = ++holdToken.current
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
-      if (!held.current || session.current) {
+      if (!held.current || holdToken.current !== token || session.current) {
         stream.getTracks().forEach((t) => t.stop())
         return
       }
@@ -101,7 +103,7 @@ export function useAnswerRecorder(onReady: (wav: ArrayBuffer, cardId: number) =>
       session.current = { ctx, stream, node, chunks, limit, cardId }
       setState('recording')
     } catch {
-      held.current = false
+      if (holdToken.current === token) held.current = false
       setState('blocked')
       window.setTimeout(() => setState('idle'), 2500)
     }
