@@ -405,6 +405,14 @@ const dockIcon = (path: React.ReactNode) => (
 
 const backIcon = dockIcon(<path d="M15 5l-7 7 7 7" />);
 const closeIcon = dockIcon(<path d="M6 6l12 12M18 6 6 18" />);
+const playIcon = dockIcon(<path d="M7 4.5v15l12-7.5z" />);
+const locateIcon = dockIcon(
+  <>
+    <circle cx="12" cy="12" r="7" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </>,
+);
 const moonIcon = dockIcon(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />);
 const sunIcon = dockIcon(
   <>
@@ -445,6 +453,16 @@ function boosterName(id: BoosterId) {
   return BOOSTERS.find((b) => b.id === id)!.name;
 }
 
+/**
+ * Bento pattern that packs with no gaps, so levels stay in order:
+ * 2 columns: one large (2×2) tile then 4 small ones; 3 columns: one large then 5 small.
+ */
+function tileSpan(index: number): string {
+  const phone = index % 5 === 0 ? "col-span-2 row-span-2" : "";
+  const wide = index % 6 === 0 ? "sm:col-span-2 sm:row-span-2" : "sm:col-span-1 sm:row-span-1";
+  return `${phone} ${wide}`;
+}
+
 function MapScreen({
   progress,
   theme,
@@ -459,48 +477,35 @@ function MapScreen({
   onClaimDaily: () => void;
 }) {
   const current = progress.unlocked;
-  const shown = Math.max(12, current + 5);
+  const shown = Math.max(12, current + 6);
   const levels = Array.from({ length: shown }, (_, i) => i + 1);
   const [selected, setSelected] = React.useState<number | null>(null);
-  const rowRef = React.useRef<HTMLOListElement>(null);
-  const drag = React.useRef<{ x: number; left: number; moved: boolean } | null>(null);
-  const dragged = React.useRef(false);
   const daily = progress.daily;
   const solvedToday = Math.min(daily.solved, DAILY_GOAL);
   const currentRef = React.useRef<HTMLButtonElement>(null);
+  const jumpToCurrent = (smooth: boolean) =>
+    currentRef.current?.scrollIntoView({ block: "center", behavior: smooth ? "smooth" : "auto" });
 
   React.useEffect(() => {
-    currentRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
-  }, []);
+    if (current > 4) jumpToCurrent(false);
+  }, [current]);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col" data-screen="map">
-      {/* Top bar, styled like the dock: title, stars, theme switch and the daily goal. */}
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col" data-screen="map">
+      {/* Top bar, styled like the dock: title, stars and the daily goal. Stays pinned while scrolling. */}
       <header className="sticky z-20 px-4 pt-3" style={{ top: "env(safe-area-inset-top, 0px)", paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
         <div className="flex flex-col gap-2 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
-          <div className="flex items-center justify-between gap-3 pl-2">
+          <div className="flex h-10 items-center justify-between gap-3 px-2">
             <h1 className="text-xl font-semibold tracking-tight">Tile Rush</h1>
-            <div className="flex items-center gap-1">
-              <span className="flex items-center gap-1 px-2 text-sm font-semibold tabular-nums" aria-label={`${totalStars(progress)} stars`}>
-                <StarIcon filled className="size-4" /> {totalStars(progress)}
-              </span>
-              <button
-                type="button"
-                data-theme-toggle
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-                className="flex size-10 items-center justify-center rounded-xl transition-colors hover:bg-panel-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
-              >
-                {theme === "dark" ? sunIcon : moonIcon}
-              </button>
-            </div>
+            <span className="flex items-center gap-1 text-sm font-semibold tabular-nums" aria-label={`${totalStars(progress)} stars`}>
+              <StarIcon filled className="size-4" /> {totalStars(progress)}
+            </span>
           </div>
 
           <div data-daily className="flex items-center gap-3 border-t border-panel-ink/10 px-2 pb-1 pt-2">
             <div className="min-w-0 flex-1">
-              <div className="flex justify-between text-sm">
-                <span>
+              <div className="flex justify-between gap-2 text-sm">
+                <span className="truncate">
                   Daily goal: solve {DAILY_GOAL} <span className="text-panel-muted">· reward 1 of each booster</span>
                 </span>
                 <span className="font-semibold tabular-nums">
@@ -525,86 +530,89 @@ function MapScreen({
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col justify-center gap-8 py-8">
-        {/* Levels in one row, left to right; scrolls sideways (mouse wheel too). */}
-        <ol
-          ref={rowRef}
-          aria-label="Levels"
-          className="flex cursor-grab snap-x snap-mandatory items-start overflow-x-auto px-[calc(50%-2.5rem)] py-3 [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-          onWheel={(e) => {
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY;
-          }}
-          // Mouse drag to scroll; touch screens and trackpads scroll natively.
-          onPointerDown={(e) => {
-            if (e.pointerType !== "mouse" || !rowRef.current) return;
-            drag.current = { x: e.clientX, left: rowRef.current.scrollLeft, moved: false };
-          }}
-          onPointerMove={(e) => {
-            const d = drag.current;
-            const row = rowRef.current;
-            if (!d || !row) return;
-            const dx = e.clientX - d.x;
-            if (!d.moved && Math.abs(dx) > 5) {
-              d.moved = true;
-              row.style.scrollSnapType = "none";
-              row.setPointerCapture(e.pointerId);
-            }
-            if (d.moved) row.scrollLeft = d.left - dx;
-          }}
-          onPointerUp={() => {
-            const d = drag.current;
-            drag.current = null;
-            if (d?.moved && rowRef.current) {
-              dragged.current = true;
-              rowRef.current.style.scrollSnapType = "";
-            }
-          }}
-          onClickCapture={(e) => {
-            // A drag that ends over a level should not open it.
-            if (dragged.current) {
-              dragged.current = false;
-              e.stopPropagation();
-              e.preventDefault();
-            }
-          }}
-        >
-          {levels.map((n) => {
-            const locked = n > current;
+      {/* Bento grid of levels: beaten levels show their picture, the rest stay blurred. */}
+      <main className="px-4 pb-32 pt-4">
+        <ol aria-label="Levels" className="grid grid-cols-2 gap-3 auto-rows-[9.5rem] sm:grid-cols-3 sm:auto-rows-[11rem]">
+          {levels.map((n, i) => {
+            const image = ITEMS[levelConfig(n, ITEMS.length).imageIndex]!;
             const stars = progress.stars[n] ?? 0;
+            const beaten = stars > 0;
+            const locked = n > current;
             const isCurrent = n === current;
             return (
-              <li key={n} className="flex shrink-0 snap-center items-start">
-                {n > 1 && <span aria-hidden className={cx("mt-10 h-1 w-6 rounded-full", locked ? "bg-panel-ink/15" : "bg-brand")} />}
-                <div className="flex w-20 flex-col items-center gap-1">
-                  <button
-                    type="button"
-                    ref={isCurrent ? currentRef : undefined}
-                    data-level={n}
-                    disabled={locked}
-                    onClick={() => setSelected(n)}
-                    aria-label={locked ? `Level ${n}, locked` : `Level ${n}${stars ? `, ${stars} stars` : ""}`}
-                    aria-current={isCurrent ? "step" : undefined}
+              <li key={n} className={tileSpan(i)}>
+                <button
+                  type="button"
+                  ref={isCurrent ? currentRef : undefined}
+                  data-level={n}
+                  disabled={locked}
+                  onClick={() => setSelected(n)}
+                  aria-label={locked ? `Level ${n}, locked` : beaten ? `Level ${n}, ${stars} stars` : `Level ${n}, not beaten yet`}
+                  className={cx(
+                    "group relative size-full overflow-hidden rounded-2xl text-left shadow-md ring-1 transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white",
+                    isCurrent ? "ring-4 ring-brand" : "ring-panel-ink/10",
+                    !locked && "hover:-translate-y-0.5 hover:shadow-lg",
+                    locked && "cursor-not-allowed",
+                  )}
+                >
+                  <span
+                    aria-hidden
                     className={cx(
-                      "btn-chunky mt-2 flex items-center justify-center rounded-full font-bold ring-4 focus-visible:outline-none focus-visible:ring-white",
-                      isCurrent ? "size-[72px] -mt-0 bg-brand text-2xl text-brand-ink ring-white" : "size-16 text-xl",
-                      !isCurrent && !locked && "bg-gradient-to-b from-candy to-candy-edge text-white ring-white/70",
-                      locked && "bg-panel/80 text-panel-muted ring-white/30",
+                      "absolute inset-0 bg-cover bg-center transition-transform duration-300",
+                      beaten ? "group-hover:scale-105" : "scale-110 blur-md",
+                      locked && "opacity-60",
                     )}
-                    style={{
-                      ["--edge" as string]: isCurrent ? "hsl(var(--brand-edge))" : locked ? "hsl(var(--panel-ink) / 0.15)" : "hsl(var(--candy-edge))",
-                    }}
-                  >
-                    {locked ? Icons.lock : n}
-                  </button>
-                  <span className="h-5">{!locked && stars > 0 && <Stars count={stars} size="size-4" />}</span>
-                </div>
+                    style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }}
+                  />
+                  {!beaten && <span aria-hidden className="absolute inset-0 bg-panel/25" />}
+                  <span className="absolute left-2 top-2 rounded-lg bg-panel/90 px-2 py-0.5 text-sm font-semibold tabular-nums text-panel-ink shadow-sm">
+                    {n}
+                  </span>
+                  {beaten && (
+                    <span className="absolute bottom-2 left-2 rounded-lg bg-panel/90 px-1.5 py-0.5 shadow-sm">
+                      <Stars count={stars} size="size-4" />
+                    </span>
+                  )}
+                  {isCurrent && !beaten && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-bold text-brand-ink shadow-lg">Play</span>
+                    </span>
+                  )}
+                  {locked && (
+                    <span className="absolute inset-0 flex items-center justify-center text-panel-ink">
+                      <span className="flex size-10 items-center justify-center rounded-full bg-panel/85 shadow">{Icons.lock}</span>
+                    </span>
+                  )}
+                </button>
               </li>
             );
           })}
         </ol>
-
-
       </main>
+
+      {/* Dock, pinned to the bottom: play the current level, jump to it, light/dark. */}
+      <nav
+        aria-label="Home"
+        className="fixed inset-x-0 bottom-0 z-20 flex justify-center px-4"
+        style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="flex items-center gap-1 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
+          <DockButton label={`Play level ${current}`} aria-label={`Play level ${current}`} data-play-current onClick={() => onPlay(current)}>
+            {playIcon}
+          </DockButton>
+          <DockButton label="Go to current level" aria-label="Go to current level" onClick={() => jumpToCurrent(true)}>
+            {locateIcon}
+          </DockButton>
+          <DockButton
+            label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            data-theme-toggle
+            onClick={onToggleTheme}
+          >
+            {theme === "dark" ? sunIcon : moonIcon}
+          </DockButton>
+        </div>
+      </nav>
 
       {selected !== null && (
         <LevelWindow level={selected} stars={progress.stars[selected] ?? 0} onPlay={() => onPlay(selected)} onClose={() => setSelected(null)} />
