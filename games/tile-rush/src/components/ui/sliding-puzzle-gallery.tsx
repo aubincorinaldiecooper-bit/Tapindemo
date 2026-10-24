@@ -40,8 +40,24 @@ export interface SlidingPuzzleGalleryProps extends Omit<React.HTMLAttributes<HTM
   panelHeader?: React.ReactNode;
   /** Tile Rush: design options being compared. */
   look?: PuzzleLook;
+  /** Tile Rush: show only the board, without the side panel. */
+  bare?: boolean;
+  /** Tile Rush: classes for the frame around the board (replaces the default frame). */
+  frameClassName?: string;
+  /** Tile Rush: called after every change to the move count. */
+  onMovesChange?: (moves: number) => void;
+  /** Tile Rush: booster controls for the parent (undo, magic moves). */
+  controls?: React.Ref<PuzzleControls>;
   /** React 19 passes `ref` as a regular prop. */
   ref?: React.Ref<HTMLDivElement>;
+}
+
+export interface PuzzleControls {
+  /** Take back the last slide and refund its moves. Returns false when there is nothing to undo. */
+  undo: () => boolean;
+  /** Play up to `steps` moves toward the solution for free. Returns false when the board is not in play. */
+  magic: (steps: number) => boolean;
+  canUndo: () => boolean;
 }
 
 export interface PuzzleLook {
@@ -75,6 +91,10 @@ interface Game {
   autoSolve: boolean;
   /** Tile Rush: true when the current solved state came from the player's own slide. */
   playerSolved: boolean;
+  /** Tile Rush: board states before each player slide, for Undo. */
+  history: Array<{ board: number[]; path: number[]; moves: number }>;
+  /** Tile Rush: moves left in a Magic booster run; 0 when no run is active. */
+  magicSteps: number;
 }
 
 type Action =
@@ -84,7 +104,9 @@ type Action =
   | { type: "solve" }
   | { type: "jump"; to: number }
   | { type: "timing"; shuffleStep: number; solveStep: number }
-  | { type: "reset"; game: Game };
+  | { type: "reset"; game: Game }
+  | { type: "undo" }
+  | { type: "magic"; steps: number };
 
 const IDLE_MS = 4000;
 const START_MS = 450;
@@ -179,12 +201,20 @@ function createGame(
     round: 0,
     autoSolve,
     playerSolved: false,
+    history: [],
+    magicSteps: 0,
   };
   if (!scrambled) return { ...game, phase: "solved" };
-  for (const target of shuffleWalk(n * n - 1, undefined, n, shuffleMoves, 7919 * (photo + 1) + n)) {
-    game = moveBlank(game, target, false);
+  const start = game;
+  // Tile Rush: a walk can land back on the solved board; try the next seed so a level never starts finished.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    game = start;
+    for (const target of shuffleWalk(n * n - 1, undefined, n, shuffleMoves, 7919 * (photo + 1) + n + 104729 * attempt)) {
+      game = moveBlank(game, target, false);
+    }
+    if (!isSolved(game.board)) return game;
   }
-  return isSolved(game.board) ? { ...game, phase: "solved", path: [n * n - 1] } : game;
+  return { ...game, phase: "solved", path: [n * n - 1] };
 }
 
 function reducer(game: Game, action: Action): Game {
@@ -220,11 +250,20 @@ function reducer(game: Game, action: Action): Game {
       };
     case "solve":
       return game.phase === "playing" ? { ...game, phase: "solving", wait: 120 } : game;
+    case "undo": {
+      const prev = game.history[game.history.length - 1];
+      if (!prev || game.phase !== "playing") return game;
+      return { ...game, ...prev, history: game.history.slice(0, -1), phase: "playing" };
+    }
+    case "magic":
+      if (game.phase !== "playing" || action.steps <= 0) return game;
+      return { ...game, phase: "solving", magicSteps: action.steps, wait: 120 };
     case "slide": {
-      if (game.phase === "shuffling") return game;
-      let next = game;
+      if (game.phase === "shuffling" || game.magicSteps > 0) return game;
+      const snapshot = { board: game.board, path: game.path, moves: game.moves };
+      let next: Game = { ...game, history: [...game.history.slice(-49), snapshot] };
       for (const target of action.targets) next = moveBlank(next, target, true);
-      if (next === game) return game;
+      if (next.board === game.board) return game;
       if (isSolved(next.board)) return { ...next, phase: "solved", path: [game.n * game.n - 1], playerSolved: true };
       return { ...next, phase: "playing" };
     }
@@ -237,6 +276,18 @@ function reducer(game: Game, action: Action): Game {
         if (isSolved(next.board)) return { ...next, phase: "solved", path: [game.n * game.n - 1] };
         if (!game.autoSolve) return { ...next, phase: "playing" };
         return { ...next, phase: "solving", wait: SETTLE_MS };
+      }
+      if (game.phase === "solving" && game.magicSteps > 0) {
+        // Magic booster: free moves back along the scramble, then hand the board back.
+        if (game.path.length <= 1 || isSolved(game.board)) {
+          return { ...game, phase: "solved", path: [game.n * game.n - 1], magicSteps: 0, playerSolved: true };
+        }
+        const next = moveBlank(game, game.path[game.path.length - 2]!, false);
+        if (next.path.length <= 1 || isSolved(next.board)) {
+          return { ...next, phase: "solved", path: [game.n * game.n - 1], magicSteps: 0, playerSolved: true };
+        }
+        const left = game.magicSteps - 1;
+        return left > 0 ? { ...next, magicSteps: left, wait: game.solveStep } : { ...next, magicSteps: 0, phase: "playing" };
       }
       if (game.phase === "solving") {
         if (game.path.length <= 1 || isSolved(game.board)) return { ...game, phase: "solved", path: [game.n * game.n - 1] };
@@ -283,6 +334,10 @@ export function SlidingPuzzleGallery({
   par,
   panelHeader,
   look = {},
+  bare = false,
+  frameClassName,
+  onMovesChange,
+  controls,
   ref,
   className,
   ...rest
@@ -316,6 +371,30 @@ export function SlidingPuzzleGallery({
     reportedRound.current = game.round;
     onSolveRef.current?.({ index: game.photo, moves: game.moves });
   }, [solved, game.playerSolved, game.round, game.photo, game.moves]);
+
+  const onMovesRef = React.useRef(onMovesChange);
+  onMovesRef.current = onMovesChange;
+  React.useEffect(() => {
+    onMovesRef.current?.(game.moves);
+  }, [game.moves]);
+
+  React.useImperativeHandle(
+    controls,
+    () => ({
+      undo: () => {
+        if (game.phase !== "playing" || game.history.length === 0) return false;
+        dispatch({ type: "undo" });
+        return true;
+      },
+      magic: (steps: number) => {
+        if (game.phase !== "playing") return false;
+        dispatch({ type: "magic", steps });
+        return true;
+      },
+      canUndo: () => game.phase === "playing" && game.history.length > 0,
+    }),
+    [game.phase, game.history.length],
+  );
 
   React.useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -535,8 +614,11 @@ export function SlidingPuzzleGallery({
     >
       {look.alignTop && stacked && panelHeader}
       <div className={cx("flex", look.alignTop && !stacked ? "items-start" : "items-center", stacked ? "flex-col gap-3" : "flex-wrap gap-6")}>
-        <div className={cx("min-w-0", stacked ? "w-full" : "flex-[4_1_360px]")} style={{ maxWidth: stacked ? STACKED_BOARD_MAX : SIDE_BOARD_MAX }}>
-          <div className="rounded-[22px] bg-muted p-2.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.14)] ring-1 ring-border">
+        <div
+          className={cx("min-w-0", bare ? "w-full" : stacked ? "w-full" : "flex-[4_1_360px]")}
+          style={bare ? undefined : { maxWidth: stacked ? STACKED_BOARD_MAX : SIDE_BOARD_MAX }}
+        >
+          <div className={frameClassName ?? "rounded-[22px] bg-muted p-2.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.14)] ring-1 ring-border"}>
             <div
               ref={boardRef}
               data-board
@@ -660,7 +742,7 @@ export function SlidingPuzzleGallery({
           </div>
         </div>
 
-        <div
+        {!bare && (<div
           data-panel
           className={cx(
             "flex flex-col",
@@ -681,7 +763,7 @@ export function SlidingPuzzleGallery({
             {shuffleButton}
             {solveButton}
           </div>
-        </div>
+        </div>)}
       </div>
     </div>
   );

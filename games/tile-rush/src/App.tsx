@@ -2,22 +2,22 @@
 
 import * as React from "react";
 import { SlidingPuzzleGallery } from "@/components/ui/sliding-puzzle-gallery";
-import type { PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
+import type { PuzzleControls, PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
+import { AdOverlay, Chunky, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
 import { OFFLINE_ITEMS } from "@/lib/artwork";
-import { SOLVES_PER_SESSION, calculatePuzzleScore } from "@/lib/gameLogic";
-
-const settings = {
-  size: 4,
-  // Tile Rush: the player solves every board, so nothing plays or solves by itself.
-  autoplay: false,
-  autoSolve: false,
-  hold: 2400,
-  moveDuration: 150,
-  shuffleMoves: 16,
-  playable: true,
-  numbers: false,
-  gap: 4,
-};
+import { levelConfig, scoreFor, starThresholds, starsFor } from "@/lib/levels";
+import {
+  DAILY_GOAL,
+  addBooster,
+  claimDaily,
+  loadProgress,
+  recordSolve,
+  saveProgress,
+  totalScore,
+  totalStars,
+} from "@/lib/progress";
+import type { BoosterId, Progress } from "@/lib/progress";
+import { useTheme } from "@/lib/theme";
 
 const PHOTOS = [
   { id: "photo-1579264688258-c0ebf8c7942a", title: "Eurasian eagle-owl", caption: "Ear tufts up, orange eyes locked on the lens." },
@@ -38,289 +38,453 @@ const PHOTO_ITEMS: PuzzleItem[] = PHOTOS.map(({ id, title, caption }) => ({
 // Builds for places that block outside images (previews, sandboxes) set VITE_OFFLINE_ART=1.
 const ITEMS: PuzzleItem[] = import.meta.env.VITE_OFFLINE_ART ? OFFLINE_ITEMS : PHOTO_ITEMS;
 
-type Theme = "light" | "dark";
-const THEME_KEY = "tile-rush-theme";
+const MAGIC_STEPS = 5;
+const AD_MOVES = 10;
+/** An ad break plays after every this-many completed levels. */
+const AD_BREAK_EVERY = 3;
+const SOLVED_PAUSE_MS = 1100;
+const PEEK_MS = 1800;
 
-function systemTheme(): Theme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-/** Light/dark switch. Starts from the saved choice, else the device setting, and sets data-theme on <html>. */
-function ThemeToggle() {
-  const [theme, setTheme] = React.useState<Theme>(() => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === "light" || saved === "dark") return saved;
-    } catch {
-      // Storage can be blocked; fall back to the device setting.
-    }
-    const fromPage = document.documentElement.dataset.theme;
-    return fromPage === "light" || fromPage === "dark" ? fromPage : systemTheme();
-  });
-
-  React.useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-
-  const next: Theme = theme === "dark" ? "light" : "dark";
-  const toggle = () => {
-    setTheme(next);
-    try {
-      localStorage.setItem(THEME_KEY, next);
-    } catch {
-      // Not saved; the switch still works for this visit.
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      data-theme-toggle
-      onClick={toggle}
-      aria-label={`Switch to ${next} mode`}
-      title={`Switch to ${next} mode`}
-      className="inline-flex size-8 items-center justify-center self-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      {theme === "dark" ? (
-        <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-          <circle cx="8" cy="8" r="3" />
-          <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06" />
-        </svg>
-      ) : (
-        <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round">
-          <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" />
-        </svg>
-      )}
-    </button>
-  );
-}
-
-export default function Demo(props: Partial<typeof settings>) {
-  const s = { ...settings, ...props };
-  // Scores of the current session; a solve after a full session starts the next one.
-  const [scores, setScores] = React.useState<number[]>([]);
-  const total = scores.reduce((sum, x) => sum + x, 0);
-  const [look, setLook] = React.useState<Record<LookId, boolean>>(DEFAULT_LOOK);
-  const shownTotal = useCountUp(total, look.reward);
-  const [gain, setGain] = React.useState<{ id: number; score: number } | null>(null);
-
-  // Accent colour and display font are page-wide, so they switch classes on <html>.
-  React.useEffect(() => {
-    const root = document.documentElement.classList;
-    root.toggle("look-accent", look.accent);
-    root.toggle("look-font", look.font);
-  }, [look.accent, look.font]);
-
-  const onSolve = ({ moves }: { moves: number }) => {
-    const score = calculatePuzzleScore(moves, s.shuffleMoves);
-    setScores((prev) => (prev.length >= SOLVES_PER_SESSION ? [score] : [...prev, score]));
-    setGain({ id: Date.now(), score });
-  };
-
-  const solvedCount = scores.length;
-  const wordmark = (
-    <h1 className={cx("whitespace-nowrap font-display font-semibold tracking-tight", look.font ? "text-2xl font-extrabold" : "text-lg")}>
-      Tile Rush
-    </h1>
-  );
-  const progress = (
-    <div className="flex items-center gap-4 font-mono text-xs text-muted-foreground">
-        {look.dots ? (
-          <span data-solved aria-label={`${solvedCount} of ${SOLVES_PER_SESSION} solved`} className="flex items-center gap-1.5">
-            {Array.from({ length: SOLVES_PER_SESSION }, (_, i) => (
-              <span
-                key={i}
-                className={cx(
-                  "size-2.5 rounded-full transition-colors duration-300",
-                  i < solvedCount ? "bg-brand" : "bg-foreground/15",
-                )}
-              />
-            ))}
-          </span>
-        ) : (
-          <span data-solved>
-            <span className="text-base tabular-nums text-foreground">{solvedCount}</span>/{SOLVES_PER_SESSION} solved
-          </span>
-        )}
-        <span data-score className="relative">
-          <span className={cx("tabular-nums", look.dots || look.font ? "font-display text-xl font-semibold" : "text-base", look.accent ? "text-brand-strong" : "text-foreground")}>
-            {shownTotal}
-          </span>{" "}
-          pts
-          {look.reward && gain && (
-            <span
-              key={gain.id}
-              aria-hidden
-              className="float-up pointer-events-none absolute -top-5 right-0 whitespace-nowrap font-display text-sm font-bold text-brand-strong"
-            >
-              +{gain.score}
-            </span>
-          )}
-        </span>
-    </div>
-  );
-  const bar = look.layout ? (
-    <div data-score-bar className="flex w-full flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        {wordmark}
-        <ThemeToggle />
-      </div>
-      {progress}
-    </div>
-  ) : (
-    <div data-score-bar className="flex w-full max-w-3xl items-center justify-between gap-4">
-      {wordmark}
-      <div className="flex items-center gap-4">
-        {progress}
-        <ThemeToggle />
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-5 bg-background px-6 pb-28 pt-6 text-foreground">
-      {!look.layout && bar}
-      <SlidingPuzzleGallery
-        items={look.photos ? PHOTO_ITEMS : ITEMS}
-        size={s.size}
-        autoplay={s.autoplay}
-        autoSolve={s.autoSolve}
-        hold={s.hold}
-        moveDuration={s.moveDuration}
-        shuffleMoves={s.shuffleMoves}
-        playable={s.playable}
-        numbers={s.numbers}
-        gap={s.gap}
-        onSolve={onSolve}
-        par={s.shuffleMoves}
-        panelHeader={look.layout ? bar : undefined}
-        look={{ primaryShuffle: look.buttons, heroMoves: look.moves, insetBlank: look.blank, alignTop: look.layout }}
-        className="max-w-3xl"
-      />
-      <DesignOptions look={look} onChange={setLook} />
-    </div>
-  );
-}
-
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
-/** Animates a number toward its new value; jumps straight there when off or when motion is reduced. */
-function useCountUp(value: number, enabled: boolean) {
-  const [shown, setShown] = React.useState(value);
-  const from = React.useRef(value);
-  React.useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!enabled || reduce || value <= from.current) {
-      from.current = value;
-      setShown(value);
-      return;
-    }
-    const start = from.current;
-    const t0 = performance.now();
-    let raf = 0;
-    const tick = (t: number) => {
-      const k = Math.min(1, (t - t0) / 700);
-      setShown(Math.round(start + (value - start) * (1 - Math.pow(1 - k, 3))));
-      if (k < 1) raf = requestAnimationFrame(tick);
-      else from.current = value;
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, enabled]);
-  return shown;
-}
-
-type LookId = "photos" | "buttons" | "moves" | "accent" | "dots" | "reward" | "font" | "blank" | "layout";
-
-const LOOK_OPTIONS: Array<{ id: LookId; label: string; note?: string }> = [
-  { id: "photos", label: "Real photos", note: "Blocked in this preview; works when hosted" },
-  { id: "buttons", label: "Shuffle as the main button" },
-  { id: "moves", label: "Big move count with par" },
-  { id: "accent", label: "Amber accent colour" },
-  { id: "dots", label: "Progress dots" },
-  { id: "reward", label: "Points pop and count up" },
-  { id: "font", label: "Display font" },
-  { id: "blank", label: "Inset empty slot" },
-  { id: "layout", label: "Score bar beside the board" },
+const BOOSTERS: Array<{ id: BoosterId; name: string; help: string }> = [
+  { id: "peek", name: "Peek", help: "Shows the finished picture for a moment." },
+  { id: "undo", name: "Undo", help: "Takes back your last slide and gives the move back." },
+  { id: "magic", name: "Magic", help: `Plays ${MAGIC_STEPS} moves toward the solution for free.` },
 ];
 
-const DEFAULT_LOOK: Record<LookId, boolean> = {
-  photos: false,
-  buttons: true,
-  moves: true,
-  accent: true,
-  dots: true,
-  reward: true,
-  font: true,
-  blank: true,
-  layout: true,
-};
+type Popup =
+  | { type: "complete"; stars: number; score: number; moves: number; best: boolean }
+  | { type: "out" }
+  | { type: "settings" }
+  | { type: "booster"; id: BoosterId };
 
-/** Temporary panel for comparing the design options. Remove once the picks are made. */
-function DesignOptions({ look, onChange }: { look: Record<LookId, boolean>; onChange: (next: Record<LookId, boolean>) => void }) {
-  // Open by default where there is room beside the game; collapsed on phones.
-  const [open, setOpen] = React.useState(() => window.innerWidth >= 1400);
-  const setAll = (on: boolean) =>
-    onChange(Object.fromEntries(LOOK_OPTIONS.map((o) => [o.id, o.id === "photos" ? look.photos : on])) as Record<LookId, boolean>);
+type Ad = { kind: "reward" | "break"; reward?: string; onDone: () => void };
+
+export default function App() {
+  const [progress, setProgressState] = React.useState<Progress>(loadProgress);
+  const [screen, setScreen] = React.useState<"map" | "play">("map");
+  const [levelNo, setLevelNo] = React.useState(() => progress.unlocked);
+  const [attempt, setAttempt] = React.useState(0);
+  const [moves, setMoves] = React.useState(0);
+  const [bonusMoves, setBonusMoves] = React.useState(0);
+  const [popup, setPopup] = React.useState<Popup | null>(null);
+  const [ad, setAd] = React.useState<Ad | null>(null);
+  const [peeking, setPeeking] = React.useState(false);
+  const [canUndo, setCanUndo] = React.useState(false);
+  const [theme, toggleTheme] = useTheme();
+  const controls = React.useRef<PuzzleControls>(null);
+  const solvedRef = React.useRef(false);
+
+  const level = levelConfig(levelNo, ITEMS.length);
+  const image = ITEMS[level.imageIndex]!;
+  const budget = level.budget + bonusMoves;
+  const movesLeft = Math.max(0, budget - moves);
+
+  const setProgress = (update: (p: Progress) => Progress) =>
+    setProgressState((p) => {
+      const next = update(p);
+      saveProgress(next);
+      return next;
+    });
+
+  const startLevel = (n: number) => {
+    setLevelNo(n);
+    setAttempt((a) => a + 1);
+    setMoves(0);
+    setBonusMoves(0);
+    setPopup(null);
+    setPeeking(false);
+    setCanUndo(false);
+    solvedRef.current = false;
+    setScreen("play");
+  };
+
+  const toMap = () => {
+    setPopup(null);
+    setScreen("map");
+  };
+
+  const onSolve = ({ moves: used }: { moves: number }) => {
+    solvedRef.current = true;
+    const stars = starsFor(used, level);
+    const score = scoreFor(used, level, budget);
+    const best = score > (progress.best[level.number] ?? 0);
+    setProgress((p) => recordSolve(p, level.number, stars, score));
+    window.setTimeout(() => setPopup({ type: "complete", stars, score, moves: used, best }), SOLVED_PAUSE_MS);
+  };
+
+  const onMovesChange = (m: number) => {
+    setMoves(m);
+    setCanUndo(controls.current?.canUndo() ?? false);
+    if (!solvedRef.current && m >= budget) setPopup({ type: "out" });
+  };
+
+  const useBooster = (id: BoosterId) => {
+    if (progress.boosters[id] <= 0) {
+      setPopup({ type: "booster", id });
+      return;
+    }
+    let used = false;
+    if (id === "peek") {
+      setPeeking(true);
+      window.setTimeout(() => setPeeking(false), PEEK_MS);
+      used = true;
+    } else if (id === "undo") {
+      used = controls.current?.undo() ?? false;
+    } else if (id === "magic") {
+      used = controls.current?.magic(MAGIC_STEPS) ?? false;
+    }
+    if (used) setProgress((p) => addBooster(p, id, -1));
+  };
+
+  const nextLevel = () => {
+    const next = level.number + 1;
+    if (level.number % AD_BREAK_EVERY === 0) {
+      setPopup(null);
+      setAd({ kind: "break", onDone: () => startLevel(next) });
+    } else {
+      startLevel(next);
+    }
+  };
+
+  const playing = screen === "play" && !popup && !ad && !peeking;
+  const liveStars = starsFor(moves, level);
+  const backdrop = screen === "play" ? image : ITEMS[(progress.unlocked - 1) % ITEMS.length]!;
 
   return (
-    <div
-      data-design-options
-      className="fixed z-50 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-background/95 text-foreground shadow-lg backdrop-blur"
-      style={{
-        right: "max(1rem, env(safe-area-inset-right, 0px))",
-        bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        Design options
-        <span className="font-mono text-xs font-normal text-muted-foreground">{open ? "Hide" : "Show"}</span>
-      </button>
-      {open && (
-        <div className="flex flex-col gap-1 px-4 pb-4">
-          {LOOK_OPTIONS.map((o, i) => (
-            <label key={o.id} htmlFor={`look-${o.id}`} className="flex cursor-pointer items-start gap-2.5 rounded-md py-1 text-sm">
-              <input
-                id={`look-${o.id}`}
-                type="checkbox"
-                checked={look[o.id]}
-                onChange={(e) => onChange({ ...look, [o.id]: e.target.checked })}
-                className="mt-0.5 size-4 accent-current"
-              />
-              <span className="flex flex-col">
-                <span>
-                  <span className="mr-1.5 font-mono text-xs text-muted-foreground">{i + 1}</span>
-                  {o.label}
+    <div className="relative min-h-screen w-full overflow-x-hidden text-panel-ink">
+      {/* Blurred copy of the current picture as the backdrop. */}
+      <div aria-hidden className="fixed inset-0 -z-10 bg-scrim">
+        <div
+          className="absolute inset-[-40px] bg-cover bg-center opacity-80 blur-2xl"
+          style={{ backgroundImage: `url(${JSON.stringify(backdrop.src)})` }}
+        />
+        <div className="absolute inset-0 bg-scrim/45" />
+      </div>
+
+      {screen === "map" ? (
+        <MapScreen
+          progress={progress}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onPlay={startLevel}
+          onClaimDaily={() => setProgress(claimDaily)}
+        />
+      ) : (
+        <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col" data-screen="play">
+          {/* HUD band: target picture, level and moves left, stars and score. */}
+          <header className="rounded-b-[28px] bg-gradient-to-b from-band-from to-band-to px-4 pb-4 pt-3 text-band-ink shadow-lg">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+              <button
+                type="button"
+                onClick={toMap}
+                aria-label="Back to the level map"
+                className="flex items-center gap-2 justify-self-start rounded-2xl bg-white/15 p-1.5 pr-3 ring-2 ring-white/25 transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-white"
+              >
+                {Icons.back}
+                <span className="size-10 rounded-xl bg-cover bg-center ring-2 ring-white/60" style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }} />
+              </button>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold tracking-wide opacity-90">~ Level {level.number} ~</span>
+                <span
+                  data-moves-left
+                  className={cx(
+                    "mt-0.5 flex size-[74px] flex-col items-center justify-center rounded-full bg-white text-band-to shadow-[inset_0_-4px_0_rgba(0,0,0,0.12)] ring-4 ring-white/40",
+                    movesLeft <= 5 && "text-candy",
+                  )}
+                >
+                  <span className="text-4xl font-bold leading-none tabular-nums">{movesLeft}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">moves</span>
                 </span>
-                {o.note && <span className="text-xs text-muted-foreground">{o.note}</span>}
-              </span>
-            </label>
-          ))}
-          <div className="mt-2 flex gap-2">
+              </div>
+              <div className="flex flex-col items-end gap-1 justify-self-end">
+                <Stars count={liveStars} size="size-6" />
+                <span className="rounded-full bg-black/20 px-3 py-0.5 text-sm font-semibold tabular-nums">
+                  {totalScore(progress).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-5">
+            <div className="relative w-full max-w-[min(520px,calc(100svh-19rem))]">
+              <SlidingPuzzleGallery
+                key={attempt}
+                items={ITEMS}
+                defaultIndex={level.imageIndex}
+                size={level.size}
+                shuffleMoves={level.par}
+                autoplay={false}
+                autoSolve={false}
+                playable={playing}
+                bare
+                frameClassName="rounded-[26px] bg-white/40 p-2 shadow-2xl ring-4 ring-white/60 backdrop-blur-md"
+                controls={controls}
+                onSolve={onSolve}
+                onMovesChange={onMovesChange}
+              />
+              {peeking && (
+                <div data-peek className="pointer-events-none absolute inset-2 overflow-hidden rounded-[18px] ring-4 ring-brand">
+                  <img src={image.src} alt={image.title ?? ""} className="size-full object-cover" />
+                  <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-sm font-semibold text-white">Peek</span>
+                </div>
+              )}
+            </div>
+            <p className="rounded-full bg-panel/85 px-4 py-1 text-sm font-semibold text-panel-ink shadow">
+              {image.title} · <span className="text-panel-muted">3★ in {starThresholds(level)[0]} moves or fewer</span>
+            </p>
+          </main>
+
+          {/* Boosters and settings. */}
+          <footer className="flex items-end justify-center gap-4 px-4" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 0px))" }}>
+            {BOOSTERS.map((b) => {
+              const count = progress.boosters[b.id];
+              const disabled = !playing || (b.id === "undo" && count > 0 && !canUndo);
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  data-booster={b.id}
+                  onClick={() => useBooster(b.id)}
+                  disabled={disabled}
+                  aria-label={`${b.name}: ${count} left. ${b.help}`}
+                  title={b.help}
+                  className="flex flex-col items-center gap-1 focus-visible:outline-none disabled:opacity-50 [&:focus-visible>span:first-child]:ring-white"
+                >
+                  <span
+                    className="btn-chunky relative flex size-16 items-center justify-center rounded-full bg-gradient-to-b from-candy to-candy-edge text-white ring-4 ring-white/60"
+                    style={{ ["--edge" as string]: "hsl(var(--candy-edge))" }}
+                  >
+                    {Icons[b.id]}
+                    <span
+                      className={cx(
+                        "absolute -bottom-1 -left-1 flex size-7 items-center justify-center rounded-full text-sm font-bold ring-2 ring-white",
+                        count > 0 ? "bg-brand text-brand-ink" : "bg-mint text-white",
+                      )}
+                    >
+                      {count > 0 ? count : "+"}
+                    </span>
+                  </span>
+                  <span className="rounded-full bg-panel/85 px-2 text-xs font-semibold text-panel-ink">{b.name}</span>
+                </button>
+              );
+            })}
+            <Chunky tone="brand" aria-label="Settings" onClick={() => setPopup({ type: "settings" })} className="ml-2 size-14 rounded-full px-0">
+              {Icons.gear}
+            </Chunky>
+          </footer>
+        </div>
+      )}
+
+      {popup?.type === "complete" && (
+        <Modal title="Level complete!">
+          <div className="flex flex-col items-center gap-2">
+            <Stars count={popup.stars} size="size-14" />
+            <span className="text-4xl font-bold tabular-nums">{popup.score.toLocaleString()}</span>
+            <span className="text-sm text-panel-muted">
+              {popup.moves} moves{popup.best ? " · new best!" : ""}
+            </span>
+          </div>
+          <Chunky onClick={nextLevel} className="h-14 text-xl" autoFocus>
+            Next level
+          </Chunky>
+          <div className="grid grid-cols-2 gap-3">
+            <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-11">
+              Replay
+            </Chunky>
+            <Chunky tone="panel" onClick={toMap} className="h-11">
+              Map
+            </Chunky>
+          </div>
+        </Modal>
+      )}
+
+      {popup?.type === "out" && (
+        <Modal title="Out of moves!">
+          <p className="text-center text-panel-muted">So close. Keep this board and get {AD_MOVES} more moves?</p>
+          <Chunky
+            tone="candy"
+            className="h-14 text-xl"
+            autoFocus
+            onClick={() => {
+              setPopup(null);
+              setAd({ kind: "reward", reward: `+${AD_MOVES} moves`, onDone: () => setBonusMoves((b) => b + AD_MOVES) });
+            }}
+          >
+            ▶ Watch ad: +{AD_MOVES} moves
+          </Chunky>
+          <div className="grid grid-cols-2 gap-3">
+            <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-11">
+              Retry
+            </Chunky>
+            <Chunky tone="panel" onClick={toMap} className="h-11">
+              Map
+            </Chunky>
+          </div>
+        </Modal>
+      )}
+
+      {popup?.type === "booster" && (
+        <Modal title={`Out of ${boosterName(popup.id)}`} onClose={() => setPopup(null)}>
+          <p className="text-center text-panel-muted">{BOOSTERS.find((b) => b.id === popup.id)!.help}</p>
+          <Chunky
+            tone="candy"
+            className="h-14 text-lg"
+            autoFocus
+            onClick={() => {
+              const id = popup.id;
+              setPopup(null);
+              setAd({ kind: "reward", reward: `1 ${boosterName(id)}`, onDone: () => setProgress((p) => addBooster(p, id, 1)) });
+            }}
+          >
+            ▶ Watch ad: get 1
+          </Chunky>
+          <Chunky tone="panel" onClick={() => setPopup(null)} className="h-11">
+            Not now
+          </Chunky>
+        </Modal>
+      )}
+
+      {popup?.type === "settings" && (
+        <Modal title="Settings" onClose={() => setPopup(null)}>
+          <Chunky tone="panel" onClick={toggleTheme} className="h-12 justify-between" data-theme-toggle>
+            <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+            <span className="text-sm text-panel-muted">Switch to {theme === "dark" ? "light" : "dark"}</span>
+          </Chunky>
+          <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-12">
+            Restart level
+          </Chunky>
+          <Chunky tone="panel" onClick={toMap} className="h-12">
+            Level map
+          </Chunky>
+          <Chunky onClick={() => setPopup(null)} className="h-12" autoFocus>
+            Keep playing
+          </Chunky>
+        </Modal>
+      )}
+
+      {ad && (
+        <AdOverlay
+          kind={ad.kind}
+          reward={ad.reward}
+          onDone={() => {
+            const done = ad.onDone;
+            setAd(null);
+            done();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function boosterName(id: BoosterId) {
+  return BOOSTERS.find((b) => b.id === id)!.name;
+}
+
+function MapScreen({
+  progress,
+  theme,
+  onToggleTheme,
+  onPlay,
+  onClaimDaily,
+}: {
+  progress: Progress;
+  theme: string;
+  onToggleTheme: () => void;
+  onPlay: (level: number) => void;
+  onClaimDaily: () => void;
+}) {
+  const current = progress.unlocked;
+  const shown = Math.max(12, current + 5);
+  // The path runs bottom to top, like climbing a map: furthest levels first in the list.
+  const levels = Array.from({ length: shown }, (_, i) => shown - i);
+  const daily = progress.daily;
+  const solvedToday = Math.min(daily.solved, DAILY_GOAL);
+  const currentRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    currentRef.current?.scrollIntoView({ block: "center" });
+  }, []);
+
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col" data-screen="map">
+      <header
+        className="sticky z-20 rounded-b-[28px] bg-gradient-to-b from-band-from to-band-to px-4 pb-4 pt-3 text-band-ink shadow-lg"
+        style={{ top: "env(safe-area-inset-top, 0px)" }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-3xl font-bold tracking-tight drop-shadow">Tile Rush</h1>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 rounded-full bg-black/20 px-3 py-1 text-sm font-semibold tabular-nums">
+              <StarIcon filled className="size-5" /> {totalStars(progress)}
+            </span>
             <button
               type="button"
-              onClick={() => setAll(true)}
-              className="h-8 flex-1 rounded-md border border-border text-xs font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              data-theme-toggle
+              onClick={onToggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              className="flex size-9 items-center justify-center rounded-full bg-white/15 text-lg ring-2 ring-white/25 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-white"
             >
-              All on
-            </button>
-            <button
-              type="button"
-              onClick={() => setAll(false)}
-              className="h-8 flex-1 rounded-md border border-border text-xs font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              All off
+              {theme === "dark" ? "☀" : "☾"}
             </button>
           </div>
         </div>
-      )}
+
+        <div data-daily className="mt-3 flex items-center gap-3 rounded-2xl bg-white/15 p-3 ring-2 ring-white/20">
+          <div className="min-w-0 flex-1">
+            <div className="flex justify-between text-sm font-semibold">
+              <span>Daily goal: solve {DAILY_GOAL}</span>
+              <span className="tabular-nums">
+                {solvedToday}/{DAILY_GOAL}
+              </span>
+            </div>
+            <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-black/25">
+              <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${(solvedToday / DAILY_GOAL) * 100}%` }} />
+            </div>
+            <div className="mt-1 text-xs opacity-80">Reward: 1 of each booster</div>
+          </div>
+          {solvedToday >= DAILY_GOAL && !daily.claimed && (
+            <Chunky onClick={onClaimDaily} className="h-10 shrink-0 text-sm">
+              Claim
+            </Chunky>
+          )}
+          {daily.claimed && <span className="shrink-0 text-sm font-semibold">Claimed ✓</span>}
+        </div>
+      </header>
+
+      <ol className="flex flex-col items-center gap-3 px-6 py-8">
+        {levels.map((n, i) => {
+          const locked = n > current;
+          const stars = progress.stars[n] ?? 0;
+          const isCurrent = n === current;
+          const offset = ["translate-x-0", "translate-x-14", "translate-x-20", "translate-x-14", "translate-x-0", "-translate-x-14", "-translate-x-20", "-translate-x-14"][n % 8];
+          return (
+            <li key={n} className={cx("flex flex-col items-center", offset)} style={{ zIndex: shown - i }}>
+              <button
+                type="button"
+                ref={isCurrent ? currentRef : undefined}
+                data-level={n}
+                disabled={locked}
+                onClick={() => onPlay(n)}
+                aria-label={locked ? `Level ${n}, locked` : `Play level ${n}${stars ? `, ${stars} stars` : ""}`}
+                className={cx(
+                  "btn-chunky flex items-center justify-center rounded-full text-xl font-bold ring-4 focus-visible:outline-none focus-visible:ring-white",
+                  isCurrent ? "size-20 bg-brand text-2xl text-brand-ink ring-white" : "size-16",
+                  !isCurrent && !locked && "bg-gradient-to-b from-candy to-candy-edge text-white ring-white/70",
+                  locked && "bg-panel/80 text-panel-muted ring-white/30",
+                )}
+                style={{
+                  ["--edge" as string]: isCurrent ? "hsl(var(--brand-edge))" : locked ? "hsl(var(--panel-ink) / 0.15)" : "hsl(var(--candy-edge))",
+                }}
+              >
+                {locked ? Icons.lock : n}
+              </button>
+              {!locked && stars > 0 && <Stars count={stars} size="size-5" className="mt-1" />}
+              {isCurrent && <span className="mt-1 rounded-full bg-panel px-3 py-0.5 text-xs font-bold text-panel-ink shadow">Play</span>}
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
