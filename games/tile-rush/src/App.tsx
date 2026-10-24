@@ -3,6 +3,7 @@
 import * as React from "react";
 import { SlidingPuzzleGallery } from "@/components/ui/sliding-puzzle-gallery";
 import type { PuzzleControls, PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
+import { Confetti } from "@/components/ui/motion-confetti";
 import { AdOverlay, Chunky, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
 import { OFFLINE_ITEMS } from "@/lib/artwork";
 import { levelConfig, scoreFor, starThresholds, starsFor } from "@/lib/levels";
@@ -89,6 +90,7 @@ export default function App() {
       return !on;
     });
   const controls = React.useRef<PuzzleControls>(null);
+  const confettiRef = React.useRef<{ fire: () => void }>(null);
   const solvedRef = React.useRef(false);
 
   const level = levelConfig(levelNo, ITEMS.length);
@@ -127,6 +129,7 @@ export default function App() {
     const score = scoreFor(used, level, budget);
     setProgress((p) => recordSolve(p, level.number, stars, score));
     setCleared({ stars, score });
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) confettiRef.current?.fire();
     window.setTimeout(nextLevel, SOLVED_PAUSE_MS);
   };
 
@@ -241,6 +244,7 @@ export default function App() {
                 onSolve={onSolve}
                 onMovesChange={onMovesChange}
               />
+              <Confetti ref={confettiRef} trigger={false} particleCount={90} startVelocity={30} spread={120} />
               {cleared && (
                 <div data-cleared className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
                   <div className="flex flex-col items-center gap-1 rounded-3xl bg-panel/95 px-6 py-3 text-panel-ink shadow-2xl ring-4 ring-white/60">

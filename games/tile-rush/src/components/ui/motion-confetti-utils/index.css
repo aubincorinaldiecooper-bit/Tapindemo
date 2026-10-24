@@ -1,0 +1,43 @@
+/* Written for Tile Rush: the original stylesheet was not included with the component.
+   The stage covers its positioned parent without catching clicks; bursts start from
+   the root's centre point and fly up and out from there. */
+.confetti-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 40;
+}
+
+.confetti-root {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 600px;
+}
+
+.confetti-burst {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.confetti-trigger {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  border: 0;
+  cursor: pointer;
+}
