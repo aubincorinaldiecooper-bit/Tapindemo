@@ -18,8 +18,6 @@ export interface SwapPuzzleProps {
   /** The scrambled board with its obstacles and gems. */
   built: Built;
   playable?: boolean;
-  /** Print each tile's number. */
-  numbers?: boolean;
   frameClassName?: string;
   onSolve?: (result: { moves: number }) => void;
   onMovesChange?: (moves: number) => void;
@@ -47,7 +45,6 @@ export function SwapPuzzle({
   image,
   built,
   playable = true,
-  numbers = false,
   frameClassName,
   onSolve,
   onMovesChange,
@@ -411,11 +408,6 @@ export function SwapPuzzle({
               {hasGem && (
                 <span aria-hidden className="pointer-events-none absolute bottom-[9%] right-[9%] drop-shadow">
                   <GemIcon className="size-5" />
-                </span>
-              )}
-              {numbers && (
-                <span aria-hidden className="absolute left-[10%] top-[10%] rounded-full bg-black/55 px-1.5 font-mono text-[10px] leading-4 text-white">
-                  {id + 1}
                 </span>
               )}
             </div>

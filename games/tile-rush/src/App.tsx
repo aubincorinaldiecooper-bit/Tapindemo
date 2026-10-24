@@ -83,22 +83,6 @@ export default function App() {
   const [gemsHere, setGemsHere] = React.useState(0);
   const [cleared, setCleared] = React.useState<{ stars: number; score: number } | null>(null);
   const [theme, toggleTheme] = useTheme();
-  const [showNumbers, setShowNumbers] = React.useState(() => {
-    try {
-      return localStorage.getItem("tile-rush-numbers") === "1";
-    } catch {
-      return false;
-    }
-  });
-  const toggleNumbers = () =>
-    setShowNumbers((on) => {
-      try {
-        localStorage.setItem("tile-rush-numbers", on ? "0" : "1");
-      } catch {
-        // Not saved; still switches for this visit.
-      }
-      return !on;
-    });
   const controls = React.useRef<SwapControls>(null);
   const confettiRef = React.useRef<{ fire: () => void }>(null);
   const solvedRef = React.useRef(false);
@@ -244,7 +228,6 @@ export default function App() {
                 image={image}
                 built={built}
                 playable={playing}
-                numbers={showNumbers}
                 frameClassName="rounded-[26px] bg-white/40 p-2 shadow-2xl ring-4 ring-white/60 backdrop-blur-md"
                 controls={controls}
                 onSolve={onSolve}
@@ -383,10 +366,6 @@ export default function App() {
           <Chunky tone="panel" onClick={toggleTheme} className="h-12 justify-between" data-theme-toggle>
             <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
             <span className="text-sm text-panel-muted">Switch to {theme === "dark" ? "light" : "dark"}</span>
-          </Chunky>
-          <Chunky tone="panel" onClick={toggleNumbers} className="h-12 justify-between" data-numbers-toggle>
-            <span>Tile numbers</span>
-            <span className="text-sm text-panel-muted">{showNumbers ? "On" : "Off"}</span>
           </Chunky>
           <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-12">
             Restart level
