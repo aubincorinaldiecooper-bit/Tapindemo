@@ -24,6 +24,7 @@ import {
   totalStars,
 } from "@/lib/progress";
 import type { BoosterId, Progress } from "@/lib/progress";
+import { playMove, playPlaced, useSound } from "@/lib/sound";
 import { useTheme } from "@/lib/theme";
 
 const PHOTOS = [
@@ -83,6 +84,7 @@ export default function App() {
   const [gemsHere, setGemsHere] = React.useState(0);
   const [cleared, setCleared] = React.useState<{ stars: number; score: number } | null>(null);
   const [theme, toggleTheme] = useTheme();
+  const [soundOn, toggleSound] = useSound();
   const controls = React.useRef<SwapControls>(null);
   const confettiRef = React.useRef<{ fire: () => void }>(null);
   const solvedRef = React.useRef(false);
@@ -232,6 +234,7 @@ export default function App() {
                 controls={controls}
                 onSolve={onSolve}
                 onMovesChange={onMovesChange}
+                onMove={(placed) => (placed ? playPlaced() : playMove())}
                 onGemsChange={(count) => {
                   setGemsHere(count);
                   if (count > 0) setProgress((p) => recordGems(p, level.number, count));
@@ -363,6 +366,10 @@ export default function App() {
 
       {popup?.type === "settings" && (
         <Modal title="Settings" onClose={() => setPopup(null)}>
+          <Chunky tone="panel" onClick={toggleSound} className="h-12 justify-between" data-sound-toggle aria-pressed={soundOn}>
+            <span>Sound</span>
+            <span className="text-sm text-panel-muted">{soundOn ? "On" : "Off"}</span>
+          </Chunky>
           <Chunky tone="panel" onClick={toggleTheme} className="h-12 justify-between" data-theme-toggle>
             <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
             <span className="text-sm text-panel-muted">Switch to {theme === "dark" ? "light" : "dark"}</span>

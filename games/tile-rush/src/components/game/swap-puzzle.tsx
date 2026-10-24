@@ -23,6 +23,8 @@ export interface SwapPuzzleProps {
   onMovesChange?: (moves: number) => void;
   /** Called with how many gems have been collected so far on this level. */
   onGemsChange?: (count: number) => void;
+  /** Called whenever tiles visibly move (a swap, an undo or a Magic step); `placed` is true when a tile landed in its right spot. */
+  onMove?: (placed: boolean) => void;
   controls?: React.Ref<SwapControls>;
 }
 
@@ -49,6 +51,7 @@ export function SwapPuzzle({
   onSolve,
   onMovesChange,
   onGemsChange,
+  onMove,
   controls,
 }: SwapPuzzleProps) {
   const n = built.size;
@@ -80,6 +83,8 @@ export function SwapPuzzle({
   onMovesRef.current = onMovesChange;
   const onGemsRef = React.useRef(onGemsChange);
   onGemsRef.current = onGemsChange;
+  const onMoveRef = React.useRef(onMove);
+  onMoveRef.current = onMove;
 
   const isFrozen = (id: number) => frozenIds.includes(id) && !thawed.includes(id);
   const isChained = (id: number) => !!chain && !chainBroken && chain.includes(id);
@@ -189,6 +194,7 @@ export function SwapPuzzle({
         setMagicLeft(0);
         return;
       }
+      onMoveRef.current?.(true);
       setBoard(swapped(board, pos, board.indexOf(pos)));
       setMagicLeft((m) => m - 1);
     }, MAGIC_STEP_MS);
@@ -209,7 +215,10 @@ export function SwapPuzzle({
     if (cost > 1) showToast("Linked tile: that swap costs 2 moves.");
     setHistory((h) => [...h.slice(-49), { board, moves, thawed, chainBroken, lines }]);
     bonusEligible.current = true;
-    setBoard(swapped(board, a, b));
+    const after = swapped(board, a, b);
+    const placed = (inPlace(after[a]!, a) && !inPlace(board[a]!, a)) || (inPlace(after[b]!, b) && !inPlace(board[b]!, b));
+    onMoveRef.current?.(placed);
+    setBoard(after);
     setMoves((m) => m + cost);
     setSelected(null);
   };
@@ -221,6 +230,7 @@ export function SwapPuzzle({
         const prev = history[history.length - 1];
         if (!prev || !canPlay) return false;
         bonusEligible.current = false;
+        onMoveRef.current?.(false);
         setBoard(prev.board);
         setMoves(prev.moves);
         setThawed(prev.thawed);
