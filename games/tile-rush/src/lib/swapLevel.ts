@@ -1,5 +1,6 @@
 /**
  * Builds a swap-puzzle level: the scrambled board plus its obstacles and gems.
+ * The game passes a new random seed on every play, so replays start from a different board.
  * Every level is checked by playing it with a simple solver, so a level can always be finished
  * and its par is a score that can actually be reached.
  */
@@ -126,11 +127,12 @@ function simulate(start: number[], n: number, frozen: number[], chain: [number, 
   return null;
 }
 
-export function buildLevel(cfg: Level): Built {
+/** Build a level from `seedBase`; a different seed gives a different scramble, obstacles and gems. */
+export function buildLevel(cfg: Level, seedBase = cfg.number * 7919): Built {
   const n = cfg.size;
   const tiles = n * n;
   for (let attempt = 0; attempt < 60; attempt++) {
-    const seed = cfg.number * 7919 + attempt * 104729;
+    const seed = (seedBase + attempt * 104729) | 0;
     const board = scramble(tiles, cfg.par, seed);
     const rand = mulberry32(seed ^ 0x9e3779b9);
     const wrong = shuffle(
@@ -148,8 +150,8 @@ export function buildLevel(cfg: Level): Built {
     return { size: n, board, frozen, chain, gems: shuffle(wrong, rand).slice(0, cfg.gems), par };
   }
   // No obstacle layout worked out: fall back to a plain board.
-  const board = scramble(tiles, cfg.par, cfg.number * 7919);
-  const rand = mulberry32(cfg.number);
+  const board = scramble(tiles, cfg.par, seedBase);
+  const rand = mulberry32(seedBase ^ 0x5bd1e995);
   return {
     size: n,
     board,

@@ -90,8 +90,27 @@ export default function App() {
   const solvedRef = React.useRef(false);
 
   const cfg = levelConfig(levelNo, ITEMS.length);
-  // The scrambled board, obstacles and gems for this level; par is the cheapest known solve.
-  const built = React.useMemo(() => buildLevel(cfg), [cfg.number]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A fresh scramble every time a level is played. Of a few candidates, keep the one where the fewest
+  // out-of-place tiles sit where they were on the last attempt, so a replay never repeats the board.
+  const lastBoards = React.useRef<Record<number, number[]>>({});
+  const built = React.useMemo(() => {
+    const prev = lastBoards.current[cfg.number];
+    let best: ReturnType<typeof buildLevel> | null = null;
+    let bestRepeats = Infinity;
+    for (let i = 0; i < 16; i++) {
+      const candidate = buildLevel(cfg, Math.floor(Math.random() * 2 ** 31));
+      if (prev && candidate.board.every((id, pos) => prev[pos] === id)) continue;
+      const repeats = prev ? candidate.board.filter((id, pos) => id !== pos && prev[pos] === id).length : 0;
+      if (repeats < bestRepeats) {
+        best = candidate;
+        bestRepeats = repeats;
+        if (repeats === 0) break;
+      }
+    }
+    const chosen = best ?? buildLevel(cfg, Math.floor(Math.random() * 2 ** 31));
+    lastBoards.current[cfg.number] = chosen.board;
+    return chosen;
+  }, [cfg.number, attempt]); // eslint-disable-line react-hooks/exhaustive-deps
   const level = { ...cfg, par: built.par, budget: built.par * 2 };
   const image = ITEMS[level.imageIndex]!;
   const budget = level.budget + bonusMoves;
