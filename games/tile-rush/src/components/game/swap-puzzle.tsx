@@ -75,6 +75,8 @@ export function SwapPuzzle({
   const pointer = React.useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const looks = React.useRef<Uint8ClampedArray[] | null>(null);
   const bonusEligible = React.useRef(false);
+  // A level can't finish before the first swap or Magic step, even if the scramble happens to look solved.
+  const acted = React.useRef(false);
   const canPlay = playable && !solved && magicLeft === 0;
 
   const onSolveRef = React.useRef(onSolve);
@@ -135,7 +137,7 @@ export function SwapPuzzle({
 
   // Hidden counter of tiles in place; all in place means solved.
   React.useEffect(() => {
-    if (solved) return;
+    if (solved || !acted.current) return;
     if (board.filter((id, pos) => inPlace(id, pos)).length === tiles) {
       setSolved(true);
       setSelected(null);
@@ -195,6 +197,7 @@ export function SwapPuzzle({
         return;
       }
       onMoveRef.current?.(true);
+      acted.current = true;
       setBoard(swapped(board, pos, board.indexOf(pos)));
       setMagicLeft((m) => m - 1);
     }, MAGIC_STEP_MS);
@@ -215,6 +218,7 @@ export function SwapPuzzle({
     if (cost > 1) showToast("Linked tile: that swap costs 2 moves.");
     setHistory((h) => [...h.slice(-49), { board, moves, thawed, chainBroken, lines }]);
     bonusEligible.current = true;
+    acted.current = true;
     const after = swapped(board, a, b);
     const placed = (inPlace(after[a]!, a) && !inPlace(board[a]!, a)) || (inPlace(after[b]!, b) && !inPlace(board[b]!, b));
     onMoveRef.current?.(placed);

@@ -4,6 +4,8 @@
  * the picture so tiles can be told apart while solving.
  */
 
+import { generateScenes } from "@/lib/scenes";
+
 
 function svg(body: string): string {
   const doc = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">${body}</svg>`;
@@ -92,8 +94,8 @@ const space = svg(`
   <path d="M300 300 l30 -60 l10 60 z" fill="#e2e8f0"/><path d="M308 300 h22 l-11 25 z" fill="#ef4444"/>
 `);
 
-/** The puzzle pictures: Tile Rush's own illustrations. */
-export const ILLUSTRATIONS = [
+/** The six original hand-drawn scenes. */
+const ORIGINALS = [
   { src: sunset, alt: "Sunset Ridge", title: "Sunset Ridge", caption: "Low sun behind two rows of peaks." },
   { src: forest, alt: "Pine Forest", title: "Pine Forest", caption: "Three pines and a field of berries." },
   { src: ocean, alt: "Open Sea", title: "Open Sea", caption: "A red sailboat on rolling water." },
@@ -101,3 +103,6 @@ export const ILLUSTRATIONS = [
   { src: desert, alt: "Desert Day", title: "Desert Day", caption: "Cacti and dunes under a hot sun." },
   { src: space, alt: "Deep Space", title: "Deep Space", caption: "A ringed planet and a passing rocket." },
 ];
+
+/** The puzzle pictures: the six originals first, then the 100 generated scenes. */
+export const ILLUSTRATIONS = [...ORIGINALS, ...generateScenes()];
