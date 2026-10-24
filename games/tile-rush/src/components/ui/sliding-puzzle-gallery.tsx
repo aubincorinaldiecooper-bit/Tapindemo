@@ -248,14 +248,6 @@ function lineTargets(blank: number, pos: number, n: number) {
   return targets;
 }
 
-function Chevron({ dir }: { dir: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d={dir === "left" ? "M10 3.5 5.5 8l4.5 4.5" : "M6 3.5 10.5 8 6 12.5"} />
-    </svg>
-  );
-}
-
 export function SlidingPuzzleGallery({
   items,
   size = 4,
@@ -451,9 +443,6 @@ export function SlidingPuzzleGallery({
   };
 
   const stepMs = reducedMotion ? 0 : game.phase === "shuffling" ? game.shuffleStep : game.solveStep;
-  const status =
-    game.phase === "solved" ? "Solved" : game.phase === "shuffling" ? "Shuffling" : game.phase === "playing" ? "Your move" : "Solving";
-  const pad = (value: number) => String(value).padStart(2, "0");
   const piece = (src: string | undefined, id: number): React.CSSProperties => ({
     backgroundImage: src ? `url(${JSON.stringify(src)})` : undefined,
     backgroundSize: `${gn * 100}% ${gn * 100}%`,
@@ -467,59 +456,28 @@ export function SlidingPuzzleGallery({
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
   };
 
-  const counter = (
-    <span className="shrink-0 font-mono text-xs text-muted-foreground">
-      {pad(target + 1)} / {pad(count)}
-    </span>
-  );
-  const statusBadge = (
-    <span aria-live="polite" data-status className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-      <span className={cx("size-1.5 rounded-full", solved ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
-      {status}
-    </span>
-  );
   const movesCount = (
     <span data-moves className="font-mono text-base tabular-nums text-foreground">
       {game.moves}
     </span>
   );
-  const thumbs = items.map((it, i) => (
-    <button
-      key={`${it.src}-${i}`}
-      type="button"
-      data-thumb={i}
-      aria-label={`Show ${it.title ?? `photo ${i + 1}`}`}
-      aria-current={i === target || undefined}
-      onClick={() => i !== target && goTo(i)}
-      className={cx(
-        "aspect-square rounded-md bg-muted bg-cover bg-center ring-offset-2 ring-offset-background transition-[opacity,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        i === target ? "ring-2 ring-foreground" : "opacity-60 hover:opacity-100",
-        stacked && "size-9 shrink-0",
-      )}
-      style={{ backgroundImage: `url(${JSON.stringify(it.src)})` }}
-    />
-  ));
   const buttonClass =
-    "inline-flex h-8 items-center justify-center rounded-md border border-border bg-background text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-  const prevButton = (
-    <button type="button" data-prev aria-label="Previous photo" onClick={() => goTo(target - 1)} className={cx(buttonClass, "shrink-0 px-2.5")}>
-      <Chevron dir="left" />
+    "inline-flex h-8 flex-1 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
+  const busy = game.phase === "shuffling" || game.phase === "solving";
+  const shuffleButton = (
+    <button type="button" data-action="shuffle" onClick={() => goTo(game.photo)} disabled={busy} className={buttonClass}>
+      Shuffle
     </button>
   );
-  const nextButton = (
-    <button type="button" data-next aria-label="Next photo" onClick={() => goTo(target + 1)} className={cx(buttonClass, "shrink-0 px-2.5")}>
-      <Chevron dir="right" />
-    </button>
-  );
-  const actionButton = (
+  const solveButton = (
     <button
       type="button"
-      data-action={solved ? "shuffle" : "solve"}
-      onClick={() => (solved ? goTo(game.photo) : game.phase === "playing" ? dispatch({ type: "solve" }) : undefined)}
-      disabled={game.phase === "shuffling" || game.phase === "solving"}
-      className={cx(buttonClass, "px-3 disabled:opacity-50", stacked ? "shrink-0" : "flex-1")}
+      data-action="solve"
+      onClick={() => dispatch({ type: "solve" })}
+      disabled={game.phase !== "playing"}
+      className={buttonClass}
     >
-      {solved ? "Shuffle" : "Solve"}
+      Solve
     </button>
   );
 
@@ -655,52 +613,23 @@ export function SlidingPuzzleGallery({
           </div>
         </div>
 
-        {stacked ? (
-          <div data-panel className="flex w-full flex-col gap-2" style={{ maxWidth: STACKED_BOARD_MAX }}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-baseline gap-2">
-                {counter}
-                <h3 className="truncate text-base font-semibold tracking-tight">{targetItem?.title ?? ""}</h3>
-              </div>
-              <div className="flex shrink-0 items-baseline gap-3">
-                <span className="inline-flex items-baseline gap-1 text-xs text-muted-foreground">
-                  {movesCount}
-                  <span>moves</span>
-                </span>
-                {statusBadge}
-              </div>
-            </div>
-            {targetItem?.caption && <p className="-mt-1 truncate text-sm text-muted-foreground">{targetItem.caption}</p>}
-            <div className="flex items-center gap-2">
-              {prevButton}
-              {count > 1 && <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto p-1 [scrollbar-width:none]">{thumbs}</div>}
-              {nextButton}
-              {actionButton}
-            </div>
-          </div>
-        ) : (
-          <div data-panel className="flex min-w-[200px] flex-[1_1_200px] flex-col gap-5">
-            <div className="flex items-center justify-between">
-              {counter}
-              {statusBadge}
-            </div>
-            <div className="min-h-[4.5rem]">
-              <h3 className="text-xl font-semibold tracking-tight">{targetItem?.title ?? ""}</h3>
-              {targetItem?.caption && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{targetItem.caption}</p>}
-            </div>
-            <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
+        <div
+          data-panel
+          className={cx("flex flex-col", stacked ? "w-full gap-3" : "min-w-[200px] flex-[1_1_200px] gap-5")}
+          style={stacked ? { maxWidth: STACKED_BOARD_MAX } : undefined}
+        >
+          <div className={cx("flex justify-between gap-3", stacked ? "items-baseline" : "flex-col")}>
+            <h3 className={cx("truncate font-semibold tracking-tight", stacked ? "text-base" : "text-xl")}>{targetItem?.title ?? ""}</h3>
+            <span className="inline-flex items-baseline gap-2 text-xs text-muted-foreground">
               <span>Moves</span>
               {movesCount}
-              {playable && !solved && game.phase !== "shuffling" && <span className="ml-auto">Click a tile next to the gap</span>}
-            </div>
-            {count > 1 && <div className="grid grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-1.5">{thumbs}</div>}
-            <div className="flex gap-2">
-              {prevButton}
-              {actionButton}
-              {nextButton}
-            </div>
+            </span>
           </div>
-        )}
+          <div className="flex gap-2">
+            {shuffleButton}
+            {solveButton}
+          </div>
+        </div>
       </div>
     </div>
   );
