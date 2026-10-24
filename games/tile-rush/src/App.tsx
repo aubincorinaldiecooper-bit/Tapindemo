@@ -404,6 +404,7 @@ const dockIcon = (path: React.ReactNode) => (
 );
 
 const backIcon = dockIcon(<path d="M15 5l-7 7 7 7" />);
+const closeIcon = dockIcon(<path d="M6 6l12 12M18 6 6 18" />);
 const moonIcon = dockIcon(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />);
 const sunIcon = dockIcon(
   <>
@@ -460,8 +461,10 @@ function MapScreen({
   const current = progress.unlocked;
   const shown = Math.max(12, current + 5);
   const levels = Array.from({ length: shown }, (_, i) => i + 1);
-  const next = levelConfig(current, ITEMS.length);
-  const nextImage = ITEMS[next.imageIndex]!;
+  const [selected, setSelected] = React.useState<number | null>(null);
+  const rowRef = React.useRef<HTMLOListElement>(null);
+  const drag = React.useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const dragged = React.useRef(false);
   const daily = progress.daily;
   const solvedToday = Math.min(daily.solved, DAILY_GOAL);
   const currentRef = React.useRef<HTMLButtonElement>(null);
@@ -525,10 +528,44 @@ function MapScreen({
       <main className="flex flex-1 flex-col justify-center gap-8 py-8">
         {/* Levels in one row, left to right; scrolls sideways (mouse wheel too). */}
         <ol
+          ref={rowRef}
           aria-label="Levels"
-          className="flex snap-x snap-mandatory items-start overflow-x-auto px-[calc(50%-2.5rem)] py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex cursor-grab snap-x snap-mandatory items-start overflow-x-auto px-[calc(50%-2.5rem)] py-3 [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
           onWheel={(e) => {
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY;
+          }}
+          // Mouse drag to scroll; touch screens and trackpads scroll natively.
+          onPointerDown={(e) => {
+            if (e.pointerType !== "mouse" || !rowRef.current) return;
+            drag.current = { x: e.clientX, left: rowRef.current.scrollLeft, moved: false };
+          }}
+          onPointerMove={(e) => {
+            const d = drag.current;
+            const row = rowRef.current;
+            if (!d || !row) return;
+            const dx = e.clientX - d.x;
+            if (!d.moved && Math.abs(dx) > 5) {
+              d.moved = true;
+              row.style.scrollSnapType = "none";
+              row.setPointerCapture(e.pointerId);
+            }
+            if (d.moved) row.scrollLeft = d.left - dx;
+          }}
+          onPointerUp={() => {
+            const d = drag.current;
+            drag.current = null;
+            if (d?.moved && rowRef.current) {
+              dragged.current = true;
+              rowRef.current.style.scrollSnapType = "";
+            }
+          }}
+          onClickCapture={(e) => {
+            // A drag that ends over a level should not open it.
+            if (dragged.current) {
+              dragged.current = false;
+              e.stopPropagation();
+              e.preventDefault();
+            }
           }}
         >
           {levels.map((n) => {
@@ -544,8 +581,8 @@ function MapScreen({
                     ref={isCurrent ? currentRef : undefined}
                     data-level={n}
                     disabled={locked}
-                    onClick={() => onPlay(n)}
-                    aria-label={locked ? `Level ${n}, locked` : `Play level ${n}${stars ? `, ${stars} stars` : ""}`}
+                    onClick={() => setSelected(n)}
+                    aria-label={locked ? `Level ${n}, locked` : `Level ${n}${stars ? `, ${stars} stars` : ""}`}
                     aria-current={isCurrent ? "step" : undefined}
                     className={cx(
                       "btn-chunky mt-2 flex items-center justify-center rounded-full font-bold ring-4 focus-visible:outline-none focus-visible:ring-white",
@@ -566,25 +603,62 @@ function MapScreen({
           })}
         </ol>
 
-        {/* The level to play next. */}
-        <section className="mx-auto flex w-[min(100%-2rem,22rem)] flex-col items-center gap-4 rounded-2xl bg-panel/90 p-5 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
-          <div
-            className="aspect-square w-36 rounded-xl bg-cover bg-center shadow ring-1 ring-panel-ink/15"
-            style={{ backgroundImage: `url(${JSON.stringify(nextImage.src)})` }}
-            role="img"
-            aria-label={nextImage.title ?? "Puzzle picture"}
-          />
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">Level {current}</h2>
-            <p className="text-sm text-panel-muted">
-              {nextImage.title} · {next.size}×{next.size} · 3★ in {starThresholds(next)[0]} moves
-            </p>
-          </div>
-          <Chunky onClick={() => onPlay(current)} className="h-12 w-full text-lg" data-play-current>
-            Play
-          </Chunky>
-        </section>
+
       </main>
+
+      {selected !== null && (
+        <LevelWindow level={selected} stars={progress.stars[selected] ?? 0} onPlay={() => onPlay(selected)} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
+
+/** The window that opens when a level is tapped on the map: picture, size, stars and Play. */
+function LevelWindow({ level, stars, onPlay, onClose }: { level: number; stars: number; onPlay: () => void; onClose: () => void }) {
+  const config = levelConfig(level, ITEMS.length);
+  const image = ITEMS[config.imageIndex]!;
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Level ${level}`}
+      data-level-window
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      style={{ paddingLeft: "max(16px, env(safe-area-inset-left, 0px))", paddingRight: "max(16px, env(safe-area-inset-right, 0px))" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <section className="relative flex w-full max-w-[22rem] flex-col items-center gap-4 rounded-2xl bg-panel p-5 text-panel-ink shadow-2xl ring-1 ring-panel-ink/10">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-xl text-panel-muted transition-colors hover:bg-panel-ink/5 hover:text-panel-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
+        >
+          {closeIcon}
+        </button>
+        <div
+          className="aspect-square w-36 rounded-xl bg-cover bg-center shadow ring-1 ring-panel-ink/15"
+          style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }}
+          role="img"
+          aria-label={image.title ?? "Puzzle picture"}
+        />
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h2 className="text-xl font-semibold">Level {level}</h2>
+          <p className="text-sm text-panel-muted">
+            {image.title} · {config.size}×{config.size} · 3★ in {starThresholds(config)[0]} moves
+          </p>
+          {stars > 0 && <Stars count={stars} size="size-5" />}
+        </div>
+        <Chunky onClick={onPlay} className="h-12 w-full text-lg" data-play-level autoFocus>
+          {stars > 0 ? "Play again" : "Play"}
+        </Chunky>
+      </section>
     </div>
   );
 }
