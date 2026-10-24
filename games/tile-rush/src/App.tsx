@@ -172,7 +172,7 @@ export default function App() {
   const backdrop = screen === "play" ? image : ITEMS[(progress.unlocked - 1) % ITEMS.length]!;
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden text-panel-ink">
+    <div className="relative min-h-screen w-full overflow-x-clip text-panel-ink">
       {/* Blurred copy of the current picture as the backdrop. */}
       <div aria-hidden className="fixed inset-0 -z-10 bg-scrim">
         <div
@@ -404,6 +404,13 @@ const dockIcon = (path: React.ReactNode) => (
 );
 
 const backIcon = dockIcon(<path d="M15 5l-7 7 7 7" />);
+const moonIcon = dockIcon(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />);
+const sunIcon = dockIcon(
+  <>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+  </>,
+);
 
 const DockIcons: Record<BoosterId | "settings", React.ReactNode> = {
   peek: dockIcon(
@@ -464,47 +471,53 @@ function MapScreen({
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col" data-screen="map">
-      <header
-        className="sticky z-20 rounded-b-[28px] bg-gradient-to-b from-band-from to-band-to px-4 pb-4 pt-3 text-band-ink shadow-lg"
-        style={{ top: "env(safe-area-inset-top, 0px)" }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-bold tracking-tight drop-shadow">Tile Rush</h1>
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 rounded-full bg-black/20 px-3 py-1 text-sm font-semibold tabular-nums">
-              <StarIcon filled className="size-5" /> {totalStars(progress)}
-            </span>
-            <button
-              type="button"
-              data-theme-toggle
-              onClick={onToggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              className="flex size-9 items-center justify-center rounded-full bg-white/15 text-lg ring-2 ring-white/25 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-white"
-            >
-              {theme === "dark" ? "☀" : "☾"}
-            </button>
-          </div>
-        </div>
-
-        <div data-daily className="mt-3 flex items-center gap-3 rounded-2xl bg-white/15 p-3 ring-2 ring-white/20">
-          <div className="min-w-0 flex-1">
-            <div className="flex justify-between text-sm font-semibold">
-              <span>Daily goal: solve {DAILY_GOAL}</span>
-              <span className="tabular-nums">
-                {solvedToday}/{DAILY_GOAL}
+      {/* Top bar, styled like the dock: title, stars, theme switch and the daily goal. */}
+      <header className="sticky z-20 px-4 pt-3" style={{ top: "env(safe-area-inset-top, 0px)", paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="flex flex-col gap-2 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
+          <div className="flex items-center justify-between gap-3 pl-2">
+            <h1 className="text-xl font-semibold tracking-tight">Tile Rush</h1>
+            <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1 px-2 text-sm font-semibold tabular-nums" aria-label={`${totalStars(progress)} stars`}>
+                <StarIcon filled className="size-4" /> {totalStars(progress)}
               </span>
+              <button
+                type="button"
+                data-theme-toggle
+                onClick={onToggleTheme}
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                className="flex size-10 items-center justify-center rounded-xl transition-colors hover:bg-panel-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
+              >
+                {theme === "dark" ? sunIcon : moonIcon}
+              </button>
             </div>
-            <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-black/25">
-              <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${(solvedToday / DAILY_GOAL) * 100}%` }} />
-            </div>
-            <div className="mt-1 text-xs opacity-80">Reward: 1 of each booster</div>
           </div>
-          {solvedToday >= DAILY_GOAL && !daily.claimed && (
-            <Chunky onClick={onClaimDaily} className="h-10 shrink-0 text-sm">
-              Claim
-            </Chunky>
-          )}
-          {daily.claimed && <span className="shrink-0 text-sm font-semibold">Claimed ✓</span>}
+
+          <div data-daily className="flex items-center gap-3 border-t border-panel-ink/10 px-2 pb-1 pt-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex justify-between text-sm">
+                <span>
+                  Daily goal: solve {DAILY_GOAL} <span className="text-panel-muted">· reward 1 of each booster</span>
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {solvedToday}/{DAILY_GOAL}
+                </span>
+              </div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-panel-ink/10">
+                <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${(solvedToday / DAILY_GOAL) * 100}%` }} />
+              </div>
+            </div>
+            {solvedToday >= DAILY_GOAL && !daily.claimed && (
+              <button
+                type="button"
+                onClick={onClaimDaily}
+                className="h-8 shrink-0 rounded-lg bg-panel-ink px-3 text-sm font-semibold text-panel transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
+              >
+                Claim
+              </button>
+            )}
+            {daily.claimed && <span className="shrink-0 text-sm text-panel-muted">Claimed</span>}
+          </div>
         </div>
       </header>
 
