@@ -42,7 +42,8 @@ const MAGIC_STEPS = 5;
 const AD_MOVES = 10;
 /** An ad break plays after every this-many completed levels. */
 const AD_BREAK_EVERY = 3;
-const SOLVED_PAUSE_MS = 1100;
+/** How long the finished picture and its banner show before the next level loads. */
+const SOLVED_PAUSE_MS = 1800;
 const PEEK_MS = 1800;
 
 const BOOSTERS: Array<{ id: BoosterId; name: string; help: string }> = [
@@ -52,7 +53,6 @@ const BOOSTERS: Array<{ id: BoosterId; name: string; help: string }> = [
 ];
 
 type Popup =
-  | { type: "complete"; stars: number; score: number; moves: number; best: boolean }
   | { type: "out" }
   | { type: "settings" }
   | { type: "booster"; id: BoosterId };
@@ -70,7 +70,24 @@ export default function App() {
   const [ad, setAd] = React.useState<Ad | null>(null);
   const [peeking, setPeeking] = React.useState(false);
   const [canUndo, setCanUndo] = React.useState(false);
+  const [cleared, setCleared] = React.useState<{ stars: number; score: number } | null>(null);
   const [theme, toggleTheme] = useTheme();
+  const [showNumbers, setShowNumbers] = React.useState(() => {
+    try {
+      return localStorage.getItem("tile-rush-numbers") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleNumbers = () =>
+    setShowNumbers((on) => {
+      try {
+        localStorage.setItem("tile-rush-numbers", on ? "0" : "1");
+      } catch {
+        // Not saved; still switches for this visit.
+      }
+      return !on;
+    });
   const controls = React.useRef<PuzzleControls>(null);
   const solvedRef = React.useRef(false);
 
@@ -94,6 +111,7 @@ export default function App() {
     setPopup(null);
     setPeeking(false);
     setCanUndo(false);
+    setCleared(null);
     solvedRef.current = false;
     setScreen("play");
   };
@@ -107,9 +125,9 @@ export default function App() {
     solvedRef.current = true;
     const stars = starsFor(used, level);
     const score = scoreFor(used, level, budget);
-    const best = score > (progress.best[level.number] ?? 0);
     setProgress((p) => recordSolve(p, level.number, stars, score));
-    window.setTimeout(() => setPopup({ type: "complete", stars, score, moves: used, best }), SOLVED_PAUSE_MS);
+    setCleared({ stars, score });
+    window.setTimeout(nextLevel, SOLVED_PAUSE_MS);
   };
 
   const onMovesChange = (m: number) => {
@@ -146,7 +164,7 @@ export default function App() {
     }
   };
 
-  const playing = screen === "play" && !popup && !ad && !peeking;
+  const playing = screen === "play" && !popup && !ad && !peeking && !cleared;
   const liveStars = starsFor(moves, level);
   const backdrop = screen === "play" ? image : ITEMS[(progress.unlocked - 1) % ITEMS.length]!;
 
@@ -216,12 +234,22 @@ export default function App() {
                 autoplay={false}
                 autoSolve={false}
                 playable={playing}
+                numbers={showNumbers}
                 bare
                 frameClassName="rounded-[26px] bg-white/40 p-2 shadow-2xl ring-4 ring-white/60 backdrop-blur-md"
                 controls={controls}
                 onSolve={onSolve}
                 onMovesChange={onMovesChange}
               />
+              {cleared && (
+                <div data-cleared className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
+                  <div className="flex flex-col items-center gap-1 rounded-3xl bg-panel/95 px-6 py-3 text-panel-ink shadow-2xl ring-4 ring-white/60">
+                    <span className="text-lg font-bold">Level {level.number} complete!</span>
+                    <Stars count={cleared.stars} size="size-8" />
+                    <span className="text-sm font-semibold tabular-nums text-panel-muted">+{cleared.score.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
               {peeking && (
                 <div data-peek className="pointer-events-none absolute inset-2 overflow-hidden rounded-[18px] ring-4 ring-brand">
                   <img src={image.src} alt={image.title ?? ""} className="size-full object-cover" />
@@ -275,29 +303,6 @@ export default function App() {
         </div>
       )}
 
-      {popup?.type === "complete" && (
-        <Modal title="Level complete!">
-          <div className="flex flex-col items-center gap-2">
-            <Stars count={popup.stars} size="size-14" />
-            <span className="text-4xl font-bold tabular-nums">{popup.score.toLocaleString()}</span>
-            <span className="text-sm text-panel-muted">
-              {popup.moves} moves{popup.best ? " · new best!" : ""}
-            </span>
-          </div>
-          <Chunky onClick={nextLevel} className="h-14 text-xl" autoFocus>
-            Next level
-          </Chunky>
-          <div className="grid grid-cols-2 gap-3">
-            <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-11">
-              Replay
-            </Chunky>
-            <Chunky tone="panel" onClick={toMap} className="h-11">
-              Map
-            </Chunky>
-          </div>
-        </Modal>
-      )}
-
       {popup?.type === "out" && (
         <Modal title="Out of moves!">
           <p className="text-center text-panel-muted">So close. Keep this board and get {AD_MOVES} more moves?</p>
@@ -349,6 +354,10 @@ export default function App() {
           <Chunky tone="panel" onClick={toggleTheme} className="h-12 justify-between" data-theme-toggle>
             <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
             <span className="text-sm text-panel-muted">Switch to {theme === "dark" ? "light" : "dark"}</span>
+          </Chunky>
+          <Chunky tone="panel" onClick={toggleNumbers} className="h-12 justify-between" data-numbers-toggle>
+            <span>Tile numbers</span>
+            <span className="text-sm text-panel-muted">{showNumbers ? "On" : "Off"}</span>
           </Chunky>
           <Chunky tone="panel" onClick={() => startLevel(level.number)} className="h-12">
             Restart level

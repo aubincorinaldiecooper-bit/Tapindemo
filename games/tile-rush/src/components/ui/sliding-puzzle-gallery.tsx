@@ -105,10 +105,13 @@ type Action =
   | { type: "jump"; to: number }
   | { type: "timing"; shuffleStep: number; solveStep: number }
   | { type: "reset"; game: Game }
+  | { type: "finish" }
   | { type: "undo" }
   | { type: "magic"; steps: number };
 
 const IDLE_MS = 4000;
+/** Tile Rush: average colour difference (0–255) below which two tiles count as looking the same. */
+const LOOK_ALIKE = 6;
 const START_MS = 450;
 const SETTLE_MS = 380;
 const STACK_BELOW_PX = 600;
@@ -250,6 +253,10 @@ function reducer(game: Game, action: Action): Game {
       };
     case "solve":
       return game.phase === "playing" ? { ...game, phase: "solving", wait: 120 } : game;
+    case "finish":
+      // Tile Rush: the board looks like the finished picture, so snap look-alike tiles home and end the round.
+      if (game.phase !== "playing") return game;
+      return { ...game, board: solvedBoard(game.n), path: [game.n * game.n - 1], phase: "solved", playerSolved: true, magicSteps: 0 };
     case "undo": {
       const prev = game.history[game.history.length - 1];
       if (!prev || game.phase !== "playing") return game;
@@ -371,6 +378,53 @@ export function SlidingPuzzleGallery({
     reportedRound.current = game.round;
     onSolveRef.current?.({ index: game.photo, moves: game.moves });
   }, [solved, game.playerSolved, game.round, game.photo, game.moves]);
+
+  // Tile Rush: what each tile's piece of the picture looks like (a small grid of pixels per tile),
+  // so tiles that look the same, such as plain sky, can stand in for each other.
+  const looks = React.useRef<Uint8ClampedArray[] | null>(null);
+  React.useEffect(() => {
+    looks.current = null;
+    if (!item?.src) return;
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      try {
+        const S = 16;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = gn * S;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, gn * S, gn * S);
+        looks.current = Array.from({ length: gn * gn }, (_, id) =>
+          ctx.getImageData((id % gn) * S, Math.floor(id / gn) * S, S, S).data,
+        );
+      } catch {
+        looks.current = null; // Picture not readable (no CORS): fall back to exact positions.
+      }
+    };
+    img.src = item.src;
+    return () => {
+      cancelled = true;
+    };
+  }, [item?.src, gn]);
+
+  React.useEffect(() => {
+    const tiles = looks.current;
+    if (game.phase !== "playing" || !tiles || isSolved(game.board)) return;
+    const blank = gn * gn - 1;
+    const sameLook = (a: number, b: number) => {
+      const x = tiles[a]!, y = tiles[b]!;
+      let diff = 0;
+      for (let i = 0; i < x.length; i += 4) diff += Math.abs(x[i]! - y[i]!) + Math.abs(x[i + 1]! - y[i + 1]!) + Math.abs(x[i + 2]! - y[i + 2]!);
+      return diff / ((x.length / 4) * 3) < LOOK_ALIKE;
+    };
+    // Hidden counter of tiles in place: a tile counts when it is in its own spot or looks
+    // the same as the tile that belongs there. All in place means the puzzle is solved.
+    const inPlace = game.board.filter((id, pos) => id !== blank && pos !== blank && (id === pos || sameLook(id, pos))).length;
+    if (inPlace === blank) dispatch({ type: "finish" });
+  }, [game.board, game.phase, gn]);
 
   const onMovesRef = React.useRef(onMovesChange);
   onMovesRef.current = onMovesChange;

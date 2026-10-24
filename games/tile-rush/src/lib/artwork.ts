@@ -4,6 +4,7 @@
  * the picture so tiles can be told apart while solving.
  */
 
+
 function svg(body: string): string {
   const doc = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">${body}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(doc)}`;
