@@ -404,7 +404,6 @@ const dockIcon = (path: React.ReactNode) => (
 );
 
 const backIcon = dockIcon(<path d="M15 5l-7 7 7 7" />);
-const closeIcon = dockIcon(<path d="M6 6l12 12M18 6 6 18" />);
 const playIcon = dockIcon(<path d="M7 4.5v15l12-7.5z" />);
 const locateIcon = dockIcon(
   <>
@@ -605,14 +604,14 @@ function MapScreen({
       </nav>
 
       {selected !== null && (
-        <LevelWindow level={selected} stars={progress.stars[selected] ?? 0} onPlay={() => onPlay(selected)} onClose={() => setSelected(null)} />
+        <LevelWindow level={selected} onPlay={() => onPlay(selected)} onClose={() => setSelected(null)} />
       )}
     </div>
   );
 }
 
-/** The window that opens when a level is tapped on the map: picture, size, stars and Play. */
-function LevelWindow({ level, stars, onPlay, onClose }: { level: number; stars: number; onPlay: () => void; onClose: () => void }) {
+/** The window that opens when a level is tapped: the full picture with Play below. Tap outside or Escape closes it. */
+function LevelWindow({ level, onPlay, onClose }: { level: number; onPlay: () => void; onClose: () => void }) {
   const config = levelConfig(level, ITEMS.length);
   const image = ITEMS[config.imageIndex]!;
   React.useEffect(() => {
@@ -631,30 +630,15 @@ function LevelWindow({ level, stars, onPlay, onClose }: { level: number; stars: 
       style={{ paddingLeft: "max(16px, env(safe-area-inset-left, 0px))", paddingRight: "max(16px, env(safe-area-inset-right, 0px))" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <section className="relative flex w-full max-w-[22rem] flex-col items-center gap-4 rounded-2xl bg-panel p-5 text-panel-ink shadow-2xl ring-1 ring-panel-ink/10">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-xl text-panel-muted transition-colors hover:bg-panel-ink/5 hover:text-panel-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
-        >
-          {closeIcon}
-        </button>
+      <section className="flex w-full max-w-[22rem] flex-col gap-3 rounded-2xl bg-panel p-3 shadow-2xl ring-1 ring-panel-ink/10">
         <div
-          className="aspect-square w-36 rounded-xl bg-cover bg-center shadow ring-1 ring-panel-ink/15"
+          className="aspect-square w-full rounded-xl bg-cover bg-center ring-1 ring-panel-ink/10"
           style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }}
           role="img"
           aria-label={image.title ?? "Puzzle picture"}
         />
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h2 className="text-xl font-semibold">Level {level}</h2>
-          <p className="text-sm text-panel-muted">
-            {image.title} · {config.size}×{config.size} · 3★ in {starThresholds(config)[0]} moves
-          </p>
-          {stars > 0 && <Stars count={stars} size="size-5" />}
-        </div>
         <Chunky onClick={onPlay} className="h-12 w-full text-lg" data-play-level autoFocus>
-          {stars > 0 ? "Play again" : "Play"}
+          Play
         </Chunky>
       </section>
     </div>
