@@ -4,11 +4,6 @@
  * the picture so tiles can be told apart while solving.
  */
 
-export interface PuzzleImage {
-  src: string;
-  title: string;
-}
-
 function svg(body: string): string {
   const doc = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">${body}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(doc)}`;
@@ -96,15 +91,12 @@ const space = svg(`
   <path d="M300 300 l30 -60 l10 60 z" fill="#e2e8f0"/><path d="M308 300 h22 l-11 25 z" fill="#ef4444"/>
 `);
 
-export const CATEGORIES: Record<string, PuzzleImage[]> = {
-  nature: [
-    { src: sunset, title: "Sunset Ridge" },
-    { src: forest, title: "Pine Forest" },
-    { src: ocean, title: "Open Sea" },
-  ],
-  worlds: [
-    { src: city, title: "Night City" },
-    { src: desert, title: "Desert Day" },
-    { src: space, title: "Deep Space" },
-  ],
-};
+/** Offline stand-ins for the gallery photos, used when external images are blocked. */
+export const OFFLINE_ITEMS = [
+  { src: sunset, alt: "Sunset Ridge", title: "Sunset Ridge", caption: "Low sun behind two rows of peaks." },
+  { src: forest, alt: "Pine Forest", title: "Pine Forest", caption: "Three pines and a field of berries." },
+  { src: ocean, alt: "Open Sea", title: "Open Sea", caption: "A red sailboat on rolling water." },
+  { src: city, alt: "Night City", title: "Night City", caption: "Lit windows under a crescent moon." },
+  { src: desert, alt: "Desert Day", title: "Desert Day", caption: "Cacti and dunes under a hot sun." },
+  { src: space, alt: "Deep Space", title: "Deep Space", caption: "A ringed planet and a passing rocket." },
+];
