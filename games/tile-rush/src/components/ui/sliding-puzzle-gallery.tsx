@@ -34,8 +34,25 @@ export interface SlidingPuzzleGalleryProps extends Omit<React.HTMLAttributes<HTM
   autoSolve?: boolean;
   /** Tile Rush: called once each time the player (not the auto-solver) completes a photo. */
   onSolve?: (result: { index: number; moves: number }) => void;
+  /** Tile Rush: target move count shown beside the moves when `look.heroMoves` is on. */
+  par?: number;
+  /** Tile Rush: shown at the top of the side panel (beside the board) when `look.alignTop` is on. */
+  panelHeader?: React.ReactNode;
+  /** Tile Rush: design options being compared. */
+  look?: PuzzleLook;
   /** React 19 passes `ref` as a regular prop. */
   ref?: React.Ref<HTMLDivElement>;
+}
+
+export interface PuzzleLook {
+  /** Shuffle is the filled main button; Solve becomes a quiet text link. */
+  primaryShuffle?: boolean;
+  /** Large move count with the par beside it. */
+  heroMoves?: boolean;
+  /** Darker, inset empty slot. */
+  insetBlank?: boolean;
+  /** Panel lines up with the top of the board and holds `panelHeader`. */
+  alignTop?: boolean;
 }
 
 type Phase = "solving" | "solved" | "shuffling" | "playing";
@@ -263,6 +280,9 @@ export function SlidingPuzzleGallery({
   gap = 4,
   autoSolve = true,
   onSolve,
+  par,
+  panelHeader,
+  look = {},
   ref,
   className,
   ...rest
@@ -456,16 +476,36 @@ export function SlidingPuzzleGallery({
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
   };
 
-  const movesCount = (
+  const overPar = par !== undefined && game.moves > par;
+  const movesCount = look.heroMoves ? (
+    <span className="inline-flex items-baseline gap-2">
+      <span data-moves className="font-display text-5xl font-semibold leading-none tabular-nums text-foreground">
+        {game.moves}
+      </span>
+      {par !== undefined && (
+        <span className={cx("font-mono text-xs tabular-nums", overPar ? "text-brand" : "text-muted-foreground")}>/ par {par}</span>
+      )}
+    </span>
+  ) : (
     <span data-moves className="font-mono text-base tabular-nums text-foreground">
       {game.moves}
     </span>
   );
   const buttonClass =
     "inline-flex h-8 flex-1 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
+  const primaryClass =
+    "inline-flex h-10 flex-1 items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-sm transition-[filter,transform] hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50";
+  const linkClass =
+    "inline-flex h-10 shrink-0 items-center justify-center rounded-md px-3 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 disabled:hover:no-underline";
   const busy = game.phase === "shuffling" || game.phase === "solving";
   const shuffleButton = (
-    <button type="button" data-action="shuffle" onClick={() => goTo(game.photo)} disabled={busy} className={buttonClass}>
+    <button
+      type="button"
+      data-action="shuffle"
+      onClick={() => goTo(game.photo)}
+      disabled={busy}
+      className={look.primaryShuffle ? primaryClass : buttonClass}
+    >
       Shuffle
     </button>
   );
@@ -475,11 +515,12 @@ export function SlidingPuzzleGallery({
       data-action="solve"
       onClick={() => dispatch({ type: "solve" })}
       disabled={game.phase !== "playing"}
-      className={buttonClass}
+      className={look.primaryShuffle ? linkClass : buttonClass}
     >
-      Solve
+      {look.primaryShuffle ? "Give up & solve" : "Solve"}
     </button>
   );
+  const headerInPanel = look.alignTop && !stacked && panelHeader;
 
   return (
     <div
@@ -492,7 +533,8 @@ export function SlidingPuzzleGallery({
       className={cx("w-full text-foreground", className)}
       {...rest}
     >
-      <div className={cx("flex items-center", stacked ? "flex-col gap-3" : "flex-wrap gap-6")}>
+      {look.alignTop && stacked && panelHeader}
+      <div className={cx("flex", look.alignTop && !stacked ? "items-start" : "items-center", stacked ? "flex-col gap-3" : "flex-wrap gap-6")}>
         <div className={cx("min-w-0", stacked ? "w-full" : "flex-[4_1_360px]")} style={{ maxWidth: stacked ? STACKED_BOARD_MAX : SIDE_BOARD_MAX }}>
           <div className="rounded-[22px] bg-muted p-2.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.14)] ring-1 ring-border">
             <div
@@ -564,7 +606,12 @@ export function SlidingPuzzleGallery({
                     <div key={id} data-blank data-pos={pos} className="absolute left-0 top-0 z-[1]" style={{ ...style, transitionDuration: "0ms" }}>
                       <span
                         aria-hidden
-                        className="absolute rounded-[7px] bg-foreground/[0.07] shadow-[inset_0_2px_6px_rgba(0,0,0,0.28)] transition-opacity duration-200"
+                        className={cx(
+                          "absolute rounded-[7px] transition-opacity duration-200",
+                          look.insetBlank
+                            ? "bg-foreground/[0.16] shadow-[inset_0_3px_8px_rgba(0,0,0,0.45),inset_0_-1px_0_rgba(255,255,255,0.08)]"
+                            : "bg-foreground/[0.07] shadow-[inset_0_2px_6px_rgba(0,0,0,0.28)]",
+                        )}
                         style={{ inset: gap / 2, opacity: solved ? 0 : 1 }}
                       />
                       <span
@@ -615,17 +662,22 @@ export function SlidingPuzzleGallery({
 
         <div
           data-panel
-          className={cx("flex flex-col", stacked ? "w-full gap-3" : "min-w-[200px] flex-[1_1_200px] gap-5")}
+          className={cx(
+            "flex flex-col",
+            stacked ? "w-full gap-3" : "min-w-[200px] flex-[1_1_200px]",
+            !stacked && (look.alignTop ? "gap-6 pt-1" : "gap-5"),
+          )}
           style={stacked ? { maxWidth: STACKED_BOARD_MAX } : undefined}
         >
-          <div className={cx("flex justify-between gap-3", stacked ? "items-baseline" : "flex-col")}>
-            <h3 className={cx("truncate font-semibold tracking-tight", stacked ? "text-base" : "text-xl")}>{targetItem?.title ?? ""}</h3>
-            <span className="inline-flex items-baseline gap-2 text-xs text-muted-foreground">
-              <span>Moves</span>
+          {headerInPanel}
+          <div className={cx("flex justify-between gap-3", stacked && !look.heroMoves ? "items-baseline" : stacked ? "items-end" : "flex-col")}>
+            <h3 className={cx("truncate font-display font-semibold tracking-tight", stacked ? "text-base" : "text-xl")}>{targetItem?.title ?? ""}</h3>
+            <span className={cx("inline-flex gap-2 text-xs text-muted-foreground", look.heroMoves ? "flex-col" : "items-baseline")}>
+              <span className={look.heroMoves ? "uppercase tracking-wider" : undefined}>Moves</span>
               {movesCount}
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {shuffleButton}
             {solveButton}
           </div>

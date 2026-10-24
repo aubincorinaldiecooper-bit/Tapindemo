@@ -4,6 +4,9 @@ export default {
   theme: {
     extend: {
       // shadcn/ui colour tokens used by the sliding puzzle gallery.
+      fontFamily: {
+        display: ["var(--font-display)"],
+      },
       colors: {
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
@@ -14,6 +17,11 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent) / <alpha-value>)",
           foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+        },
+        brand: {
+          DEFAULT: "hsl(var(--brand) / <alpha-value>)",
+          foreground: "hsl(var(--brand-foreground) / <alpha-value>)",
+          strong: "hsl(var(--brand-strong) / <alpha-value>)",
         },
         border: "hsl(var(--border) / <alpha-value>)",
         ring: "hsl(var(--ring) / <alpha-value>)",
