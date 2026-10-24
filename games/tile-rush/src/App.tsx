@@ -459,14 +459,15 @@ function MapScreen({
 }) {
   const current = progress.unlocked;
   const shown = Math.max(12, current + 5);
-  // The path runs bottom to top, like climbing a map: furthest levels first in the list.
-  const levels = Array.from({ length: shown }, (_, i) => shown - i);
+  const levels = Array.from({ length: shown }, (_, i) => i + 1);
+  const next = levelConfig(current, ITEMS.length);
+  const nextImage = ITEMS[next.imageIndex]!;
   const daily = progress.daily;
   const solvedToday = Math.min(daily.solved, DAILY_GOAL);
   const currentRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
-    currentRef.current?.scrollIntoView({ block: "center" });
+    currentRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, []);
 
   return (
@@ -521,39 +522,69 @@ function MapScreen({
         </div>
       </header>
 
-      <ol className="flex flex-col items-center gap-3 px-6 py-8">
-        {levels.map((n, i) => {
-          const locked = n > current;
-          const stars = progress.stars[n] ?? 0;
-          const isCurrent = n === current;
-          const offset = ["translate-x-0", "translate-x-14", "translate-x-20", "translate-x-14", "translate-x-0", "-translate-x-14", "-translate-x-20", "-translate-x-14"][n % 8];
-          return (
-            <li key={n} className={cx("flex flex-col items-center", offset)} style={{ zIndex: shown - i }}>
-              <button
-                type="button"
-                ref={isCurrent ? currentRef : undefined}
-                data-level={n}
-                disabled={locked}
-                onClick={() => onPlay(n)}
-                aria-label={locked ? `Level ${n}, locked` : `Play level ${n}${stars ? `, ${stars} stars` : ""}`}
-                className={cx(
-                  "btn-chunky flex items-center justify-center rounded-full text-xl font-bold ring-4 focus-visible:outline-none focus-visible:ring-white",
-                  isCurrent ? "size-20 bg-brand text-2xl text-brand-ink ring-white" : "size-16",
-                  !isCurrent && !locked && "bg-gradient-to-b from-candy to-candy-edge text-white ring-white/70",
-                  locked && "bg-panel/80 text-panel-muted ring-white/30",
-                )}
-                style={{
-                  ["--edge" as string]: isCurrent ? "hsl(var(--brand-edge))" : locked ? "hsl(var(--panel-ink) / 0.15)" : "hsl(var(--candy-edge))",
-                }}
-              >
-                {locked ? Icons.lock : n}
-              </button>
-              {!locked && stars > 0 && <Stars count={stars} size="size-5" className="mt-1" />}
-              {isCurrent && <span className="mt-1 rounded-full bg-panel px-3 py-0.5 text-xs font-bold text-panel-ink shadow">Play</span>}
-            </li>
-          );
-        })}
-      </ol>
+      <main className="flex flex-1 flex-col justify-center gap-8 py-8">
+        {/* Levels in one row, left to right; scrolls sideways (mouse wheel too). */}
+        <ol
+          aria-label="Levels"
+          className="flex snap-x snap-mandatory items-start overflow-x-auto px-[calc(50%-2.5rem)] py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onWheel={(e) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY;
+          }}
+        >
+          {levels.map((n) => {
+            const locked = n > current;
+            const stars = progress.stars[n] ?? 0;
+            const isCurrent = n === current;
+            return (
+              <li key={n} className="flex shrink-0 snap-center items-start">
+                {n > 1 && <span aria-hidden className={cx("mt-10 h-1 w-6 rounded-full", locked ? "bg-panel-ink/15" : "bg-brand")} />}
+                <div className="flex w-20 flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    ref={isCurrent ? currentRef : undefined}
+                    data-level={n}
+                    disabled={locked}
+                    onClick={() => onPlay(n)}
+                    aria-label={locked ? `Level ${n}, locked` : `Play level ${n}${stars ? `, ${stars} stars` : ""}`}
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={cx(
+                      "btn-chunky mt-2 flex items-center justify-center rounded-full font-bold ring-4 focus-visible:outline-none focus-visible:ring-white",
+                      isCurrent ? "size-[72px] -mt-0 bg-brand text-2xl text-brand-ink ring-white" : "size-16 text-xl",
+                      !isCurrent && !locked && "bg-gradient-to-b from-candy to-candy-edge text-white ring-white/70",
+                      locked && "bg-panel/80 text-panel-muted ring-white/30",
+                    )}
+                    style={{
+                      ["--edge" as string]: isCurrent ? "hsl(var(--brand-edge))" : locked ? "hsl(var(--panel-ink) / 0.15)" : "hsl(var(--candy-edge))",
+                    }}
+                  >
+                    {locked ? Icons.lock : n}
+                  </button>
+                  <span className="h-5">{!locked && stars > 0 && <Stars count={stars} size="size-4" />}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* The level to play next. */}
+        <section className="mx-auto flex w-[min(100%-2rem,22rem)] flex-col items-center gap-4 rounded-2xl bg-panel/90 p-5 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
+          <div
+            className="aspect-square w-36 rounded-xl bg-cover bg-center shadow ring-1 ring-panel-ink/15"
+            style={{ backgroundImage: `url(${JSON.stringify(nextImage.src)})` }}
+            role="img"
+            aria-label={nextImage.title ?? "Puzzle picture"}
+          />
+          <div className="text-center">
+            <h2 className="text-xl font-semibold">Level {current}</h2>
+            <p className="text-sm text-panel-muted">
+              {nextImage.title} · {next.size}×{next.size} · 3★ in {starThresholds(next)[0]} moves
+            </p>
+          </div>
+          <Chunky onClick={() => onPlay(current)} className="h-12 w-full text-lg" data-play-current>
+            Play
+          </Chunky>
+        </section>
+      </main>
     </div>
   );
 }
