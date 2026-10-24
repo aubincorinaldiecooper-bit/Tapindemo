@@ -192,36 +192,29 @@ export default function App() {
         />
       ) : (
         <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col" data-screen="play">
-          {/* HUD band: target picture, level and moves left, stars and score. */}
-          <header className="rounded-b-[28px] bg-gradient-to-b from-band-from to-band-to px-4 pb-4 pt-3 text-band-ink shadow-lg">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          {/* Top bar, styled like the dock: back + target picture, level and moves left, stars and score. */}
+          <header className="px-4 pt-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
               <button
                 type="button"
                 onClick={toMap}
                 aria-label="Back to the level map"
-                className="flex items-center gap-2 justify-self-start rounded-2xl bg-white/15 p-1.5 pr-3 ring-2 ring-white/25 transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-white"
+                title="Level map"
+                className="flex h-12 items-center gap-1.5 justify-self-start rounded-xl pl-1 pr-2 transition-colors hover:bg-panel-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40"
               >
-                {Icons.back}
-                <span className="size-10 rounded-xl bg-cover bg-center ring-2 ring-white/60" style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }} />
+                {backIcon}
+                <span className="size-8 rounded-lg bg-cover bg-center ring-1 ring-panel-ink/15" style={{ backgroundImage: `url(${JSON.stringify(image.src)})` }} />
               </button>
-              <div className="flex flex-col items-center">
-                <span className="text-sm font-semibold tracking-wide opacity-90">~ Level {level.number} ~</span>
-                <span
-                  data-moves-left
-                  className={cx(
-                    "mt-0.5 flex size-[74px] flex-col items-center justify-center rounded-full bg-white text-band-to shadow-[inset_0_-4px_0_rgba(0,0,0,0.12)] ring-4 ring-white/40",
-                    movesLeft <= 5 && "text-candy",
-                  )}
-                >
-                  <span className="text-4xl font-bold leading-none tabular-nums">{movesLeft}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">moves</span>
+              <div className="flex flex-col items-center leading-tight">
+                <span className="text-xs text-panel-muted">Level {level.number}</span>
+                <span data-moves-left className={cx("text-2xl font-semibold tabular-nums", movesLeft <= 5 && "text-red-500")}>
+                  {movesLeft}
                 </span>
+                <span className="text-[11px] text-panel-muted">moves left</span>
               </div>
-              <div className="flex flex-col items-end gap-1 justify-self-end">
-                <Stars count={liveStars} size="size-6" />
-                <span className="rounded-full bg-black/20 px-3 py-0.5 text-sm font-semibold tabular-nums">
-                  {totalScore(progress).toLocaleString()}
-                </span>
+              <div className="flex flex-col items-end gap-0.5 justify-self-end pr-1">
+                <Stars count={liveStars} size="size-4" />
+                <span className="text-sm font-semibold tabular-nums">{totalScore(progress).toLocaleString()}</span>
               </div>
             </div>
           </header>
@@ -409,6 +402,8 @@ const dockIcon = (path: React.ReactNode) => (
     {path}
   </svg>
 );
+
+const backIcon = dockIcon(<path d="M15 5l-7 7 7 7" />);
 
 const DockIcons: Record<BoosterId | "settings", React.ReactNode> = {
   peek: dockIcon(
