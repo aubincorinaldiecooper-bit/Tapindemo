@@ -6,7 +6,7 @@ import { SwapPuzzle } from "@/components/game/swap-puzzle";
 import type { SwapControls } from "@/components/game/swap-puzzle";
 import { Confetti } from "@/components/ui/motion-confetti";
 import { AdOverlay, Chunky, GemIcon, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
-import { OFFLINE_ITEMS } from "@/lib/artwork";
+import { ILLUSTRATIONS } from "@/lib/artwork";
 import { levelConfig, scoreFor, starThresholds, starsFor } from "@/lib/levels";
 import { buildLevel } from "@/lib/swapLevel";
 import {
@@ -27,24 +27,8 @@ import type { BoosterId, Progress } from "@/lib/progress";
 import { playMove, playPlaced, useSound } from "@/lib/sound";
 import { useTheme } from "@/lib/theme";
 
-const PHOTOS = [
-  { id: "photo-1579264688258-c0ebf8c7942a", title: "Eurasian eagle-owl", caption: "Ear tufts up, orange eyes locked on the lens." },
-  { id: "photo-1639104738898-ec92e9e40a0a", title: "Red fox", caption: "Caught mid-step at the edge of the woods." },
-  { id: "photo-1619475762212-da12e5e15f18", title: "Tiger in the snow", caption: "Frost on the whiskers and a steady stare." },
-  { id: "photo-1542880941-1abfea46bba6", title: "Red panda", caption: "Round ears, white brows and plenty of curiosity." },
-  { id: "photo-1544923408-75c5cef46f14", title: "Scarlet macaw", caption: "Red, yellow and blue, all on one bird." },
-  { id: "photo-1745933115134-9cd90e3efcc7", title: "Lion", caption: "A heavy golden mane and a calm, slow look." },
-];
-
-const PHOTO_ITEMS: PuzzleItem[] = PHOTOS.map(({ id, title, caption }) => ({
-  src: `https://images.unsplash.com/${id}?w=1000&h=1000&fit=crop&q=80&auto=format`,
-  alt: title,
-  title,
-  caption,
-}));
-
-// Builds for places that block outside images (previews, sandboxes) set VITE_OFFLINE_ART=1.
-const ITEMS: PuzzleItem[] = import.meta.env.VITE_OFFLINE_ART ? OFFLINE_ITEMS : PHOTO_ITEMS;
+// The game's own illustrations, one per level (they repeat after the last one).
+const ITEMS: PuzzleItem[] = ILLUSTRATIONS;
 
 const MAGIC_STEPS = 5;
 const AD_MOVES = 10;

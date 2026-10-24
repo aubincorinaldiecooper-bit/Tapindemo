@@ -1,18 +1,22 @@
 # Tile Rush
 
-A sliding puzzle game with a reward loop designed for ad-revenue monetization.
+A swap picture puzzle. Each level scrambles one of the game's illustrations; drag a tile onto
+another (or tap two tiles) to swap them until the picture is whole.
 
-**Game Loop:**
-- Solve sliding tile puzzles (4×4 grid by default)
-- Score based on move efficiency vs optimal moves
-- Complete 3 rounds per session
-- Earn points, unlock categories
-- Persistent leaderboards (localStorage initially)
+## How it plays
 
-**Tech Stack:**
-- React 18 + TypeScript
-- Vite + Tailwind CSS
-- No dependencies for game logic (pure React)
+- **Levels:** 3×3 for levels 1–3, 4×4 for 4–10, then 5×5. Every play of a level is a fresh scramble.
+- **Moves and stars:** each level has a par (the cheapest known solve). 3 stars at par, 2 stars
+  within half as many again; you get twice par in moves before running out.
+- **Obstacles:** frozen tiles from level 4 (thaw when a neighbouring tile is in place) and a
+  linked pair from level 8 (swaps cost 2 moves until one of them is in place).
+- **Gems:** 3 per level, collected when that tile reaches its spot. 10 gems buy a booster.
+- **Line bonus:** completing a row or column with a swap gives +1 move.
+- **Boosters:** Peek (from the start), Undo (level 5), Magic (level 10).
+- **Daily goal:** solve 5 puzzles for one of each booster.
+- **Ads (placeholders):** "+10 moves" when out of moves, a booster refill, and an ad break
+  every 3 levels. See `AdOverlay` in `src/components/game/ui.tsx`.
+- Light/dark mode and sound (on by default) are in Settings. Progress is saved in the browser.
 
 ## Run locally
 
@@ -22,76 +26,24 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173`
+`npm run build` writes a static site to `dist/`.
 
-## Project Structure
+## Where things are
 
 ```
 src/
-├── components/
-│   └── SlidingPuzzle.tsx     # Puzzle component (manual-only)
-├── lib/
-│   └── gameLogic.ts          # Scoring, state management, persistence
-├── App.tsx                   # Main game loop (menu → playing → complete)
-├── App.css                   # Tailwind styles
-└── main.tsx                  # Entry point
-
-index.html                     # HTML entry
-package.json                   # Dependencies
-vite.config.ts                # Vite build config
-tailwind.config.js            # Tailwind configuration
-postcss.config.js             # PostCSS config
+├── App.tsx                     Home grid, game screen, docks, popups
+├── components/game/
+│   ├── swap-puzzle.tsx         The puzzle board: swaps, obstacles, gems, line bonus
+│   └── ui.tsx                  Buttons, stars, gem icon, popups, ad placeholder
+├── components/ui/
+│   ├── motion-confetti.tsx     Confetti on solve
+│   └── sliding-puzzle-gallery.tsx  Original sliding puzzle (not used by the game)
+└── lib/
+    ├── artwork.ts              The illustrations (SVG)
+    ├── levels.ts               Size, par, move budget, stars and score per level
+    ├── swapLevel.ts            Builds and test-solves each level's board
+    ├── progress.ts             Saved progress, gems and daily goal
+    ├── sound.ts                Move and tile-placed sounds
+    └── theme.ts                Light/dark setting
 ```
-
-## Game Phases
-
-1. **Menu** — Start new session or continue
-2. **Playing** — Solve the puzzle (3 rounds)
-3. **Round Complete** — Show score, move to next or finish
-4. **Session Complete** — Final stats + ad placement + replay option
-
-## Scoring
-
-Points are calculated based on **move efficiency**:
-
-```
-efficiency = optimal_moves / actual_moves
-```
-
-- **≥1.0** (better than optimal): 1000× efficiency
-- **0.8–1.0** (good): 800× efficiency
-- **0.6–0.8** (acceptable): 500× efficiency
-- **<0.6** (below average): 300× efficiency (min 100)
-
-## Ad Placement
-
-- **Between rounds** (natural break after solving)
-- **After session complete** (placeholder in App.tsx, line ~320)
-- **Optional reward ads** (watch for hints, undo, 2x multiplier)
-
-## Data Persistence
-
-Game state saved to `localStorage` as `tile-rush-game-state`:
-
-```typescript
-{
-  round: number,              // Current round (1-3)
-  totalScore: number,         // Sum of all round scores
-  rounds: RoundResult[],      // History of solved puzzles
-  currentStreak: number,      // Puzzles solved in a row
-  bestStreak: number,         // Best streak recorded
-  category: string,           // Current image category
-  totalPuzzlesSolved: number  // Lifetime stat
-}
-```
-
-## Next Steps (Refine Loop)
-
-1. **Add category progression** — Unlock "nature", "cities" etc. at score milestones
-2. **Timed mode** — Solve N puzzles in 60 seconds
-3. **Daily challenge** — Fixed puzzle, compete on move count
-4. **Hint system** — Reveal tile positions (costs coins)
-5. **Leaderboard backend** — Post scores to a server
-6. **Sound effects** — Tile slide, solve, round complete
-7. **Mobile optimization** — Touch events for mobile
-8. **Difficulty levels** — 3×3 (easy), 4×4 (normal), 5×5 (hard)

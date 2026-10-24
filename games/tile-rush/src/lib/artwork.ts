@@ -1,6 +1,6 @@
 /**
- * Built-in puzzle artwork as SVG data URIs, so the game works offline and
- * inside sandboxed viewers. Each scene has distinct shapes in every area of
+ * Tile Rush's puzzle illustrations, drawn as SVG and built into the game, so they
+ * load instantly and work offline. Each scene has distinct shapes in every area of
  * the picture so tiles can be told apart while solving.
  */
 
@@ -92,8 +92,8 @@ const space = svg(`
   <path d="M300 300 l30 -60 l10 60 z" fill="#e2e8f0"/><path d="M308 300 h22 l-11 25 z" fill="#ef4444"/>
 `);
 
-/** Offline stand-ins for the gallery photos, used when external images are blocked. */
-export const OFFLINE_ITEMS = [
+/** The puzzle pictures: Tile Rush's own illustrations. */
+export const ILLUSTRATIONS = [
   { src: sunset, alt: "Sunset Ridge", title: "Sunset Ridge", caption: "Low sun behind two rows of peaks." },
   { src: forest, alt: "Pine Forest", title: "Pine Forest", caption: "Three pines and a field of berries." },
   { src: ocean, alt: "Open Sea", title: "Open Sea", caption: "A red sailboat on rolling water." },
