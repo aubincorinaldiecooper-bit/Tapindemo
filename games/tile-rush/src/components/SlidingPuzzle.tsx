@@ -1,39 +1,16 @@
-"use client";
-
 import * as React from "react";
+import type { PuzzleImage } from "../lib/artwork";
 
-export interface PuzzleItem {
-  src: string;
-  alt?: string;
-  title?: string;
-}
-
-export interface SlidingPuzzleProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
-  items: PuzzleItem[];
+export interface SlidingPuzzleProps {
+  image: PuzzleImage;
+  /** Tiles per side, 3–6. */
   size?: number;
+  /** Random moves used to scramble the board. */
+  shuffleMoves?: number;
   moveDuration?: number;
   onSolved?: (moves: number) => void;
   onMovesChange?: (moves: number) => void;
-  ref?: React.Ref<HTMLDivElement>;
-}
-
-type Phase = "playing" | "solved";
-
-interface Game {
-  n: number;
-  board: number[];
-  photo: number;
-  phase: Phase;
-  moves: number;
-  path: number[];
-}
-
-type Action =
-  | { type: "slide"; targets: number[] }
-  | { type: "reset"; game: Game };
-
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
+  className?: string;
 }
 
 function neighbors(pos: number, n: number) {
@@ -47,63 +24,31 @@ function neighbors(pos: number, n: number) {
   return out;
 }
 
-function solvedBoard(n: number) {
-  return Array.from({ length: n * n }, (_, i) => i);
-}
-
 function isSolved(board: number[]) {
   return board.every((id, pos) => id === pos);
 }
 
-function moveBlank(game: Game, to: number, counted: boolean): Game {
-  const blankId = game.n * game.n - 1;
-  const from = game.board.indexOf(blankId);
-  if (!neighbors(from, game.n).includes(to)) return game;
-  const board = game.board.slice();
-  board[from] = board[to]!;
-  board[to] = blankId;
-  const path =
-    game.path.length >= 2 && game.path[game.path.length - 2] === to ? game.path.slice(0, -1) : [...game.path, to];
-  return { ...game, board, path, moves: game.moves + (counted ? 1 : 0) };
-}
-
-function createGame(n: number, photo: number, shuffleMoves: number): Game {
-  const n2 = Math.max(3, Math.min(6, Math.round(n)));
-  let game: Game = {
-    n: n2,
-    board: solvedBoard(n2),
-    photo,
-    phase: "playing",
-    moves: 0,
-    path: [n2 * n2 - 1],
-  };
-
-  // Simple shuffle
-  for (let i = 0; i < shuffleMoves; i++) {
-    const blankId = n2 * n2 - 1;
-    const blank = game.board.indexOf(blankId);
-    const options = neighbors(blank, n2);
-    const target = options[Math.floor(Math.random() * options.length)]!;
-    game = moveBlank(game, target, false);
-  }
-
-  return game;
-}
-
-function reducer(game: Game, action: Action): Game {
-  switch (action.type) {
-    case "slide": {
-      let next = game;
-      for (const target of action.targets) next = moveBlank(next, target, true);
-      if (next === game) return game;
-      if (isSolved(next.board)) return { ...next, phase: "solved", path: [game.n * game.n - 1] };
-      return next;
+/** Scramble by walking the gap randomly, which always leaves a solvable board. */
+function scramble(n: number, moves: number): number[] {
+  const blank = n * n - 1;
+  let board: number[];
+  do {
+    board = Array.from({ length: n * n }, (_, i) => i);
+    let at = blank;
+    let last = -1;
+    for (let i = 0; i < moves; i++) {
+      const options = neighbors(at, n).filter((p) => p !== last);
+      const next = options[Math.floor(Math.random() * options.length)]!;
+      board[at] = board[next]!;
+      board[next] = blank;
+      last = at;
+      at = next;
     }
-    case "reset":
-      return action.game;
-  }
+  } while (isSolved(board));
+  return board;
 }
 
+/** Positions the gap passes through when the tile at `pos` slides toward it (same row or column only). */
 function lineTargets(blank: number, pos: number, n: number) {
   const br = Math.floor(blank / n);
   const bc = blank % n;
@@ -121,171 +66,120 @@ function lineTargets(blank: number, pos: number, n: number) {
 }
 
 export function SlidingPuzzle({
-  items,
+  image,
   size = 4,
-  moveDuration = 150,
+  shuffleMoves = 60,
+  moveDuration = 140,
   onSolved,
   onMovesChange,
-  ref,
   className,
-  ...rest
 }: SlidingPuzzleProps) {
   const n = Math.max(3, Math.min(6, Math.round(size)));
-  const count = items.length;
-  const photo = 0; // Single puzzle mode
-  const [game, dispatch] = React.useReducer(
-    reducer,
-    undefined,
-    () => createGame(n, photo, 20)
-  );
-  const rootRef = React.useRef<HTMLDivElement>(null);
-  const boardRef = React.useRef<HTMLDivElement>(null);
+  const blankId = n * n - 1;
+  const [board, setBoard] = React.useState(() => scramble(n, shuffleMoves));
+  const [moves, setMoves] = React.useState(0);
+  const solved = isSolved(board);
+  const reported = React.useRef(false);
 
-  const item = items[game.photo];
-  const gn = game.n;
-  const blankId = gn * gn - 1;
-  const solved = game.phase === "solved";
+  // Callbacks change identity on every parent render; keep the latest without re-running effects.
+  const onSolvedRef = React.useRef(onSolved);
+  const onMovesRef = React.useRef(onMovesChange);
+  onSolvedRef.current = onSolved;
+  onMovesRef.current = onMovesChange;
 
-  // Notify moves change
   React.useEffect(() => {
-    onMovesChange?.(game.moves);
-  }, [game.moves, onMovesChange]);
+    onMovesRef.current?.(moves);
+  }, [moves]);
 
-  // Notify when solved
   React.useEffect(() => {
-    if (solved) {
-      onSolved?.(game.moves);
-    }
-  }, [solved, game.moves, onSolved]);
+    if (!solved || reported.current) return;
+    reported.current = true;
+    // Let the finished picture show before the parent moves on.
+    const timer = window.setTimeout(() => onSolvedRef.current?.(moves), 900);
+    return () => window.clearTimeout(timer);
+  }, [solved, moves]);
 
-  const slideFrom = (pos: number) => {
-    const targets = lineTargets(game.board.indexOf(blankId), pos, gn);
-    if (targets.length > 0) dispatch({ type: "slide", targets });
+  const slideTo = (targets: number[]) => {
+    if (solved || targets.length === 0) return;
+    setBoard((prev) => {
+      const next = prev.slice();
+      let at = next.indexOf(blankId);
+      for (const t of targets) {
+        if (!neighbors(at, n).includes(t)) break;
+        next[at] = next[t]!;
+        next[t] = blankId;
+        at = t;
+      }
+      return next;
+    });
+    setMoves((m) => m + targets.length);
   };
 
+  const onTile = (pos: number) => slideTo(lineTargets(board.indexOf(blankId), pos, n));
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const blank = game.board.indexOf(blankId);
-    const row = Math.floor(blank / gn);
-    const col = blank % gn;
+    const blank = board.indexOf(blankId);
+    const row = Math.floor(blank / n);
+    const col = blank % n;
     let to = -1;
-    if (event.key === "ArrowUp" && row < gn - 1) to = blank + gn;
-    else if (event.key === "ArrowDown" && row > 0) to = blank - gn;
-    else if (event.key === "ArrowLeft" && col < gn - 1) to = blank + 1;
+    if (event.key === "ArrowUp" && row < n - 1) to = blank + n;
+    else if (event.key === "ArrowDown" && row > 0) to = blank - n;
+    else if (event.key === "ArrowLeft" && col < n - 1) to = blank + 1;
     else if (event.key === "ArrowRight" && col > 0) to = blank - 1;
     if (to < 0) return;
     event.preventDefault();
-    dispatch({ type: "slide", targets: [to] });
+    slideTo([to]);
   };
 
-  const stepMs = moveDuration;
-  const inset = solved ? 0 : 2;
-  const gap = 4;
-
-  const setRootRef = (node: HTMLDivElement | null) => {
-    rootRef.current = node;
-    if (typeof ref === "function") ref(node);
-    else if (ref) ref.current = node;
-  };
-
-  const piece = (src: string | undefined, id: number): React.CSSProperties => ({
-    backgroundImage: src ? `url(${JSON.stringify(src)})` : undefined,
-    backgroundSize: `${gn * 100}% ${gn * 100}%`,
-    backgroundPosition: `${((id % gn) / (gn - 1)) * 100}% ${(Math.floor(id / gn) / (gn - 1)) * 100}%`,
+  const pieceStyle = (id: number): React.CSSProperties => ({
+    backgroundImage: `url("${image.src}")`,
+    backgroundSize: `${n * 100}% ${n * 100}%`,
+    backgroundPosition: `${((id % n) / (n - 1)) * 100}% ${(Math.floor(id / n) / (n - 1)) * 100}%`,
   });
 
   return (
-    <div
-      ref={setRootRef}
-      data-slot="sliding-puzzle"
-      data-phase={game.phase}
-      className={cx("w-full text-foreground", className)}
-      {...rest}
-    >
-      <div className="rounded-2xl bg-muted p-2.5 shadow-lg ring-1 ring-border">
+    <div className={className}>
+      <div className="rounded-2xl bg-slate-700/60 p-2 shadow-xl ring-1 ring-slate-600">
         <div
-          ref={boardRef}
-          data-board
           role="group"
           tabIndex={0}
-          aria-label="Sliding puzzle game. Use arrow keys or click tiles to slide."
+          aria-label={`Sliding puzzle: ${image.title}. Tap a tile in line with the gap, or use the arrow keys.`}
           onKeyDown={onKeyDown}
-          className="relative aspect-square w-full overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="relative aspect-square w-full touch-manipulation select-none overflow-hidden rounded-xl bg-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          {game.board.map((id, pos) => {
-            const isBlank = id === blankId;
-            const style: React.CSSProperties = {
-              width: `${100 / gn}%`,
-              height: `${100 / gn}%`,
-              transform: `translate(${(pos % gn) * 100}%, ${Math.floor(pos / gn) * 100}%)`,
-              transitionProperty: "transform",
-              transitionDuration: `${stepMs}ms`,
-              transitionTimingFunction: "cubic-bezier(0.3, 0.7, 0.2, 1)",
-            };
-
-            const layers = (
-              <>
-                <span
-                  aria-hidden
-                  className="absolute rounded transition-opacity duration-300"
-                  style={{
-                    inset: gap / 2,
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
-                    opacity: solved ? 0 : 1,
-                  }}
-                />
-                <span
-                  aria-hidden
-                  className="absolute inset-0 bg-muted transition-opacity duration-300"
-                  style={{ ...piece(item?.src, id), opacity: 1 }}
-                />
-              </>
-            );
-
-            if (isBlank) {
-              return (
-                <div key={id} data-blank data-pos={pos} className="absolute left-0 top-0 z-1" style={{ ...style, transitionDuration: "0ms" }}>
-                  <span
-                    aria-hidden
-                    className="absolute rounded bg-foreground/10 transition-opacity duration-200"
-                    style={{ inset: gap / 2, opacity: solved ? 0 : 1 }}
-                  />
-                </div>
-              );
-            }
-
+          {board.map((id, pos) => {
+            if (id === blankId) return null;
             return (
               <button
                 key={id}
                 type="button"
                 tabIndex={-1}
-                data-tile={id}
-                data-pos={pos}
                 aria-label={`Tile ${id + 1}`}
-                onClick={() => slideFrom(game.board.indexOf(id))}
-                className="absolute left-0 top-0 z-2 cursor-pointer outline-none"
-                style={style}
+                onClick={() => onTile(pos)}
+                className="absolute left-0 top-0 p-[2px]"
+                style={{
+                  width: `${100 / n}%`,
+                  height: `${100 / n}%`,
+                  transform: `translate(${(pos % n) * 100}%, ${Math.floor(pos / n) * 100}%)`,
+                  transition: `transform ${moveDuration}ms cubic-bezier(0.3, 0.7, 0.2, 1)`,
+                }}
               >
-                {layers}
+                <span className="block size-full rounded-md shadow-md ring-1 ring-black/20" style={pieceStyle(id)} />
               </button>
             );
           })}
-
-          {item && (
-            <img
-              src={item.src}
-              alt={item.alt ?? item.title ?? ""}
-              data-photo-full
-              draggable={false}
-              className="pointer-events-none absolute inset-0 z-10 size-full object-cover transition-opacity duration-300"
-              style={{ opacity: solved ? 1 : 0 }}
-            />
-          )}
+          <img
+            src={image.src}
+            alt={image.title}
+            draggable={false}
+            className="pointer-events-none absolute inset-0 size-full transition-opacity duration-500"
+            style={{ opacity: solved ? 1 : 0 }}
+          />
         </div>
       </div>
-
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{item?.title ?? ""}</span>
-        <span className="font-mono font-bold">{game.moves} moves</span>
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="text-slate-300">{image.title}</span>
+        <span className="font-mono font-bold text-white">{moves} moves</span>
       </div>
     </div>
   );
