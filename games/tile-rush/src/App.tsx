@@ -453,16 +453,6 @@ function boosterName(id: BoosterId) {
   return BOOSTERS.find((b) => b.id === id)!.name;
 }
 
-/**
- * Bento pattern that packs with no gaps, so levels stay in order:
- * 2 columns: one large (2×2) tile then 4 small ones; 3 columns: one large then 5 small.
- */
-function tileSpan(index: number): string {
-  const phone = index % 5 === 0 ? "col-span-2 row-span-2" : "";
-  const wide = index % 6 === 0 ? "sm:col-span-2 sm:row-span-2" : "sm:col-span-1 sm:row-span-1";
-  return `${phone} ${wide}`;
-}
-
 function MapScreen({
   progress,
   theme,
@@ -530,17 +520,17 @@ function MapScreen({
         </div>
       </header>
 
-      {/* Bento grid of levels: beaten levels show their picture, the rest stay blurred. */}
+      {/* Grid of levels: beaten levels show their picture, the rest stay blurred. */}
       <main className="px-4 pb-32 pt-4">
-        <ol aria-label="Levels" className="grid grid-cols-2 gap-3 auto-rows-[9.5rem] sm:grid-cols-3 sm:auto-rows-[11rem]">
-          {levels.map((n, i) => {
+        <ol aria-label="Levels" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {levels.map((n) => {
             const image = ITEMS[levelConfig(n, ITEMS.length).imageIndex]!;
             const stars = progress.stars[n] ?? 0;
             const beaten = stars > 0;
             const locked = n > current;
             const isCurrent = n === current;
             return (
-              <li key={n} className={tileSpan(i)}>
+              <li key={n} className="aspect-square">
                 <button
                   type="button"
                   ref={isCurrent ? currentRef : undefined}
