@@ -49,6 +49,15 @@ export function StarIcon({ filled, className }: { filled: boolean; className?: s
   );
 }
 
+export function GemIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className ?? "size-4"}>
+      <path d="M6 3h12l4 6-10 12L2 9z" fill="#22d3ee" stroke="#0e7490" strokeWidth={1.4} strokeLinejoin="round" />
+      <path d="M2 9h20M9 3 7 9l5 12 5-12-2-6" fill="none" stroke="#a5f3fc" strokeWidth={1} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function Stars({ count, size = "size-6", className }: { count: number; size?: string; className?: string }) {
   return (
     <span className={cx("inline-flex items-end gap-0.5", className)} aria-label={`${count} of 3 stars`}>

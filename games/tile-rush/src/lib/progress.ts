@@ -12,9 +12,14 @@ export interface Progress {
   best: Record<number, number>;
   boosters: Record<BoosterId, number>;
   daily: { date: string; solved: number; claimed: boolean };
+  /** Most gems found on each level (each level pays out once). */
+  gems: Record<number, number>;
+  gemsSpent: number;
 }
 
 export const DAILY_GOAL = 5;
+/** Gems it costs to buy one booster. */
+export const GEM_PRICE = 10;
 const KEY = "tile-rush-progress";
 
 export function today(): string {
@@ -29,6 +34,8 @@ function fresh(): Progress {
     best: {},
     boosters: { peek: 3, undo: 3, magic: 2 },
     daily: { date: today(), solved: 0, claimed: false },
+    gems: {},
+    gemsSpent: 0,
   };
 }
 
@@ -84,4 +91,18 @@ export function totalStars(p: Progress): number {
 
 export function totalScore(p: Progress): number {
   return Object.values(p.best).reduce((sum, s) => sum + s, 0);
+}
+
+/** Remember the most gems found on a level; only the increase counts toward the total. */
+export function recordGems(p: Progress, level: number, count: number): Progress {
+  if (count <= (p.gems[level] ?? 0)) return p;
+  return { ...p, gems: { ...p.gems, [level]: count } };
+}
+
+export function totalGems(p: Progress): number {
+  return Object.values(p.gems).reduce((sum, g) => sum + g, 0) - p.gemsSpent;
+}
+
+export function spendGems(p: Progress, amount: number): Progress {
+  return totalGems(p) >= amount ? { ...p, gemsSpent: p.gemsSpent + amount } : p;
 }

@@ -5,16 +5,21 @@ import type { PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
 import { SwapPuzzle } from "@/components/game/swap-puzzle";
 import type { SwapControls } from "@/components/game/swap-puzzle";
 import { Confetti } from "@/components/ui/motion-confetti";
-import { AdOverlay, Chunky, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
+import { AdOverlay, Chunky, GemIcon, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
 import { OFFLINE_ITEMS } from "@/lib/artwork";
 import { levelConfig, scoreFor, starThresholds, starsFor } from "@/lib/levels";
+import { buildLevel } from "@/lib/swapLevel";
 import {
   DAILY_GOAL,
+  GEM_PRICE,
   addBooster,
   claimDaily,
   loadProgress,
+  recordGems,
   recordSolve,
   saveProgress,
+  spendGems,
+  totalGems,
   totalScore,
   totalStars,
 } from "@/lib/progress";
@@ -54,6 +59,9 @@ const BOOSTERS: Array<{ id: BoosterId; name: string; help: string }> = [
   { id: "magic", name: "Magic", help: `Makes ${MAGIC_STEPS} correct swaps for you, free.` },
 ];
 
+/** The highest level a player must have reached before each booster can be used. */
+const BOOSTER_UNLOCK: Record<BoosterId, number> = { peek: 1, undo: 5, magic: 10 };
+
 type Popup =
   | { type: "out" }
   | { type: "settings" }
@@ -72,6 +80,7 @@ export default function App() {
   const [ad, setAd] = React.useState<Ad | null>(null);
   const [peeking, setPeeking] = React.useState(false);
   const [canUndo, setCanUndo] = React.useState(false);
+  const [gemsHere, setGemsHere] = React.useState(0);
   const [cleared, setCleared] = React.useState<{ stars: number; score: number } | null>(null);
   const [theme, toggleTheme] = useTheme();
   const [showNumbers, setShowNumbers] = React.useState(() => {
@@ -94,7 +103,10 @@ export default function App() {
   const confettiRef = React.useRef<{ fire: () => void }>(null);
   const solvedRef = React.useRef(false);
 
-  const level = levelConfig(levelNo, ITEMS.length);
+  const cfg = levelConfig(levelNo, ITEMS.length);
+  // The scrambled board, obstacles and gems for this level; par is the cheapest known solve.
+  const built = React.useMemo(() => buildLevel(cfg), [cfg.number]); // eslint-disable-line react-hooks/exhaustive-deps
+  const level = { ...cfg, par: built.par, budget: built.par * 2 };
   const image = ITEMS[level.imageIndex]!;
   const budget = level.budget + bonusMoves;
   const movesLeft = Math.max(0, budget - moves);
@@ -114,6 +126,7 @@ export default function App() {
     setPopup(null);
     setPeeking(false);
     setCanUndo(false);
+    setGemsHere(0);
     setCleared(null);
     solvedRef.current = false;
     setScreen("play");
@@ -141,6 +154,7 @@ export default function App() {
   };
 
   const useBooster = (id: BoosterId) => {
+    if (progress.unlocked < BOOSTER_UNLOCK[id]) return;
     if (progress.boosters[id] <= 0) {
       setPopup({ type: "booster", id });
       return;
@@ -216,6 +230,9 @@ export default function App() {
               <div className="flex flex-col items-end gap-0.5 justify-self-end pr-1">
                 <Stars count={liveStars} size="size-4" />
                 <span className="text-sm font-semibold tabular-nums">{totalScore(progress).toLocaleString()}</span>
+                <span data-gems className="flex items-center gap-1 text-xs tabular-nums text-panel-muted" aria-label={`${gemsHere} of ${built.gems.length} gems`}>
+                  <GemIcon className="size-3.5" /> {gemsHere}/{built.gems.length}
+                </span>
               </div>
             </div>
           </header>
@@ -225,15 +242,17 @@ export default function App() {
               <SwapPuzzle
                 key={attempt}
                 image={image}
-                size={level.size}
-                par={level.par}
-                seed={level.number * 7919}
+                built={built}
                 playable={playing}
                 numbers={showNumbers}
                 frameClassName="rounded-[26px] bg-white/40 p-2 shadow-2xl ring-4 ring-white/60 backdrop-blur-md"
                 controls={controls}
                 onSolve={onSolve}
                 onMovesChange={onMovesChange}
+                onGemsChange={(count) => {
+                  setGemsHere(count);
+                  if (count > 0) setProgress((p) => recordGems(p, level.number, count));
+                }}
               />
               <Confetti ref={confettiRef} trigger={false} particleCount={90} startVelocity={30} spread={120} />
               {cleared && (
@@ -255,6 +274,16 @@ export default function App() {
             <p className="rounded-full bg-panel/85 px-4 py-1 text-sm font-semibold text-panel-ink shadow">
               {image.title} · <span className="text-panel-muted">3★ in {starThresholds(level)[0]} moves or fewer</span>
             </p>
+            {(built.frozen.length > 0 || built.chain) && (
+              <p data-hint className="max-w-[min(520px,100%)] rounded-full bg-panel/85 px-4 py-1 text-center text-xs text-panel-muted shadow">
+                {[
+                  built.frozen.length > 0 && "Frozen tiles thaw when a neighbour is in place",
+                  built.chain && "Linked tiles cost 2 moves until one is in place",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
           </main>
 
           {/* Dock: boosters and settings. */}
@@ -265,16 +294,19 @@ export default function App() {
             >
               {BOOSTERS.map((b) => {
                 const count = progress.boosters[b.id];
-                const disabled = !playing || (b.id === "undo" && count > 0 && !canUndo);
+                const lockedAt = BOOSTER_UNLOCK[b.id];
+                const locked = progress.unlocked < lockedAt;
+                const disabled = !playing || locked || (b.id === "undo" && count > 0 && !canUndo);
                 return (
                   <DockButton
                     key={b.id}
                     data-booster={b.id}
-                    label={b.name}
+                    label={locked ? `${b.name}: unlocks at level ${lockedAt}` : b.name}
                     onClick={() => useBooster(b.id)}
                     disabled={disabled}
-                    aria-label={`${b.name}: ${count} left. ${b.help}`}
-                    badge={count > 0 ? count : undefined}
+                    aria-label={locked ? `${b.name}: unlocks at level ${lockedAt}` : `${b.name}: ${count} left. ${b.help}`}
+                    badge={locked ? undefined : count > 0 ? count : undefined}
+                    lock={locked}
                   >
                     {DockIcons[b.id]}
                   </DockButton>
@@ -328,6 +360,18 @@ export default function App() {
           >
             ▶ Watch ad: get 1
           </Chunky>
+          <Chunky
+            tone="panel"
+            disabled={totalGems(progress) < GEM_PRICE}
+            className="h-11 gap-2"
+            onClick={() => {
+              const id = popup.id;
+              setPopup(null);
+              setProgress((p) => addBooster(spendGems(p, GEM_PRICE), id, 1));
+            }}
+          >
+            <GemIcon className="size-4" /> {GEM_PRICE} gems: get 1 <span className="text-panel-muted">({totalGems(progress)} owned)</span>
+          </Chunky>
           <Chunky tone="panel" onClick={() => setPopup(null)} className="h-11">
             Not now
           </Chunky>
@@ -375,9 +419,10 @@ export default function App() {
 function DockButton({
   label,
   badge,
+  lock,
   children,
   ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string; badge?: number } & Record<`data-${string}`, string>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string; badge?: number; lock?: boolean } & Record<`data-${string}`, string>) {
   return (
     <button
       type="button"
@@ -386,6 +431,14 @@ function DockButton({
       className="group relative flex size-12 items-center justify-center rounded-xl transition-[transform,background-color] duration-150 hover:-translate-y-1 hover:scale-110 hover:bg-panel-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none motion-reduce:hover:transform-none"
     >
       {children}
+      {lock && (
+        <span className="absolute right-1 top-1 flex size-[18px] items-center justify-center rounded-full bg-panel-ink text-panel ring-2 ring-panel">
+          <svg viewBox="0 0 24 24" aria-hidden className="size-2.5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        </span>
+      )}
       {badge !== undefined && (
         <span className="absolute right-1 top-1 flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold leading-[18px] text-white ring-2 ring-panel tabular-nums">
           {badge}
@@ -484,9 +537,14 @@ function MapScreen({
         <div className="flex flex-col gap-2 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md">
           <div className="flex h-10 items-center justify-between gap-3 px-2">
             <h1 className="text-xl font-semibold tracking-tight">Tile Rush</h1>
-            <span className="flex items-center gap-1 text-sm font-semibold tabular-nums" aria-label={`${totalStars(progress)} stars`}>
-              <StarIcon filled className="size-4" /> {totalStars(progress)}
-            </span>
+            <div className="flex items-center gap-3 text-sm font-semibold tabular-nums">
+              <span className="flex items-center gap-1" aria-label={`${totalGems(progress)} gems`} data-gems-total>
+                <GemIcon className="size-4" /> {totalGems(progress)}
+              </span>
+              <span className="flex items-center gap-1" aria-label={`${totalStars(progress)} stars`}>
+                <StarIcon filled className="size-4" /> {totalStars(progress)}
+              </span>
+            </div>
           </div>
 
           <div data-daily className="flex items-center gap-3 border-t border-panel-ink/10 px-2 pb-1 pt-2">

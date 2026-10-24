@@ -12,6 +12,12 @@ export interface Level {
   budget: number;
   /** Which picture this level uses (wraps around the picture list). */
   imageIndex: number;
+  /** Frozen tiles: none before level 4, one on levels 4–6, two from level 7. */
+  frozen: number;
+  /** Linked pairs: none before level 8, one from level 8. */
+  chains: number;
+  /** Tiles carrying a gem. */
+  gems: number;
 }
 
 /** Levels 1–3 are 3×3, 4–10 are 4×4, then 5×5. Each level needs a few more swaps than the last. */
@@ -25,6 +31,9 @@ export function levelConfig(number: number, imageCount: number): Level {
     par,
     budget: par * 2,
     imageIndex: (number - 1) % Math.max(1, imageCount),
+    frozen: number >= 7 ? 2 : number >= 4 ? 1 : 0,
+    chains: number >= 8 ? 1 : 0,
+    gems: 3,
   };
 }
 
