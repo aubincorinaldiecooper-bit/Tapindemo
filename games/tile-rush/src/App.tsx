@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { SlidingPuzzleGallery } from "@/components/ui/sliding-puzzle-gallery";
-import type { PuzzleControls, PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
+import type { PuzzleItem } from "@/components/ui/sliding-puzzle-gallery";
+import { SwapPuzzle } from "@/components/game/swap-puzzle";
+import type { SwapControls } from "@/components/game/swap-puzzle";
 import { Confetti } from "@/components/ui/motion-confetti";
 import { AdOverlay, Chunky, Icons, Modal, StarIcon, Stars, cx } from "@/components/game/ui";
 import { OFFLINE_ITEMS } from "@/lib/artwork";
@@ -49,8 +50,8 @@ const PEEK_MS = 1800;
 
 const BOOSTERS: Array<{ id: BoosterId; name: string; help: string }> = [
   { id: "peek", name: "Peek", help: "Shows the finished picture for a moment." },
-  { id: "undo", name: "Undo", help: "Takes back your last slide and gives the move back." },
-  { id: "magic", name: "Magic", help: `Plays ${MAGIC_STEPS} moves toward the solution for free.` },
+  { id: "undo", name: "Undo", help: "Takes back your last swap and gives the move back." },
+  { id: "magic", name: "Magic", help: `Makes ${MAGIC_STEPS} correct swaps for you, free.` },
 ];
 
 type Popup =
@@ -89,7 +90,7 @@ export default function App() {
       }
       return !on;
     });
-  const controls = React.useRef<PuzzleControls>(null);
+  const controls = React.useRef<SwapControls>(null);
   const confettiRef = React.useRef<{ fire: () => void }>(null);
   const solvedRef = React.useRef(false);
 
@@ -221,17 +222,14 @@ export default function App() {
 
           <main className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-5">
             <div className="relative w-full max-w-[min(520px,calc(100svh-19rem))]">
-              <SlidingPuzzleGallery
+              <SwapPuzzle
                 key={attempt}
-                items={ITEMS}
-                defaultIndex={level.imageIndex}
+                image={image}
                 size={level.size}
-                shuffleMoves={level.par}
-                autoplay={false}
-                autoSolve={false}
+                par={level.par}
+                seed={level.number * 7919}
                 playable={playing}
                 numbers={showNumbers}
-                bare
                 frameClassName="rounded-[26px] bg-white/40 p-2 shadow-2xl ring-4 ring-white/60 backdrop-blur-md"
                 controls={controls}
                 onSolve={onSolve}
