@@ -526,6 +526,52 @@ export function SlidingPuzzleGallery({
     if (targets.length > 0) dispatch({ type: "slide", targets });
   };
 
+  // Tile Rush: swipe or drag a tile toward the gap, with a mouse or a finger.
+  const swipe = React.useRef<{ x: number; y: number; pos: number | null } | null>(null);
+  const swiped = React.useRef(false);
+  const SWIPE_PX = 14;
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!playable) return;
+    const tile = (event.target as HTMLElement).closest<HTMLElement>("[data-pos]");
+    swipe.current = { x: event.clientX, y: event.clientY, pos: tile ? Number(tile.dataset.pos) : null };
+    swiped.current = false;
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || !playable) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_PX) return; // a tap: the tile's click handles it
+    swiped.current = true;
+    const horizontal = Math.abs(dx) > Math.abs(dy);
+    const blank = game.board.indexOf(blankId);
+    const br = Math.floor(blank / gn);
+    const bc = blank % gn;
+    // Swiped a tile that sits in line with the gap, toward the gap: slide it (and any tiles between).
+    if (start.pos !== null && start.pos !== blank) {
+      const pr = Math.floor(start.pos / gn);
+      const pc = start.pos % gn;
+      const towardGap = horizontal
+        ? pr === br && Math.sign(bc - pc) === Math.sign(dx)
+        : pc === bc && Math.sign(br - pr) === Math.sign(dy);
+      if (towardGap) {
+        const targets = lineTargets(blank, start.pos, gn);
+        if (targets.length > 0) dispatch({ type: "slide", targets });
+        return;
+      }
+    }
+    // Otherwise move the tile next to the gap in the swipe's direction, like the arrow keys.
+    let to = -1;
+    if (horizontal && dx < 0 && bc < gn - 1) to = blank + 1;
+    else if (horizontal && dx > 0 && bc > 0) to = blank - 1;
+    else if (!horizontal && dy < 0 && br < gn - 1) to = blank + gn;
+    else if (!horizontal && dy > 0 && br > 0) to = blank - gn;
+    if (to >= 0) dispatch({ type: "slide", targets: [to] });
+  };
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!playable) return;
     const blank = game.board.indexOf(blankId);
@@ -626,7 +672,10 @@ export function SlidingPuzzleGallery({
               tabIndex={playable ? 0 : undefined}
               aria-label={`Sliding puzzle of ${item?.title ?? item?.alt ?? "a photo"}. Use the arrow keys to slide a tile into the gap.`}
               onKeyDown={onKeyDown}
-              className="relative aspect-square w-full overflow-hidden rounded-[14px] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted"
+              onPointerDown={onPointerDown}
+              onPointerUp={onPointerUp}
+              onPointerCancel={() => (swipe.current = null)}
+              className="relative aspect-square w-full touch-none select-none overflow-hidden rounded-[14px] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted"
             >
               {game.board.map((id, pos) => {
                 const isBlank = id === blankId;
@@ -714,7 +763,13 @@ export function SlidingPuzzleGallery({
                     data-tile={id}
                     data-pos={pos}
                     aria-label={`Tile ${id + 1}`}
-                    onClick={() => slideFrom(game.board.indexOf(id))}
+                    onClick={() => {
+                      if (swiped.current) {
+                        swiped.current = false;
+                        return;
+                      }
+                      slideFrom(game.board.indexOf(id));
+                    }}
                     className={cx("absolute left-0 top-0 z-[2] outline-none", playable ? "cursor-pointer" : "cursor-default")}
                     style={style}
                   >
