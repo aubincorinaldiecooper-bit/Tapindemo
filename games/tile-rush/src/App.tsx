@@ -262,43 +262,33 @@ export default function App() {
             </p>
           </main>
 
-          {/* Boosters and settings. */}
-          <footer className="flex items-end justify-center gap-4 px-4" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 0px))" }}>
-            {BOOSTERS.map((b) => {
-              const count = progress.boosters[b.id];
-              const disabled = !playing || (b.id === "undo" && count > 0 && !canUndo);
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  data-booster={b.id}
-                  onClick={() => useBooster(b.id)}
-                  disabled={disabled}
-                  aria-label={`${b.name}: ${count} left. ${b.help}`}
-                  title={b.help}
-                  className="flex flex-col items-center gap-1 focus-visible:outline-none disabled:opacity-50 [&:focus-visible>span:first-child]:ring-white"
-                >
-                  <span
-                    className="btn-chunky relative flex size-16 items-center justify-center rounded-full bg-gradient-to-b from-candy to-candy-edge text-white ring-4 ring-white/60"
-                    style={{ ["--edge" as string]: "hsl(var(--candy-edge))" }}
+          {/* Dock: boosters and settings. */}
+          <footer className="flex justify-center px-4" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 0px))" }}>
+            <nav
+              aria-label="Boosters"
+              className="flex items-center gap-1 rounded-2xl bg-panel/90 p-2 text-panel-ink shadow-lg ring-1 ring-panel-ink/10 backdrop-blur-md"
+            >
+              {BOOSTERS.map((b) => {
+                const count = progress.boosters[b.id];
+                const disabled = !playing || (b.id === "undo" && count > 0 && !canUndo);
+                return (
+                  <DockButton
+                    key={b.id}
+                    data-booster={b.id}
+                    label={b.name}
+                    onClick={() => useBooster(b.id)}
+                    disabled={disabled}
+                    aria-label={`${b.name}: ${count} left. ${b.help}`}
+                    badge={count > 0 ? count : undefined}
                   >
-                    {Icons[b.id]}
-                    <span
-                      className={cx(
-                        "absolute -bottom-1 -left-1 flex size-7 items-center justify-center rounded-full text-sm font-bold ring-2 ring-white",
-                        count > 0 ? "bg-brand text-brand-ink" : "bg-mint text-white",
-                      )}
-                    >
-                      {count > 0 ? count : "+"}
-                    </span>
-                  </span>
-                  <span className="rounded-full bg-panel/85 px-2 text-xs font-semibold text-panel-ink">{b.name}</span>
-                </button>
-              );
-            })}
-            <Chunky tone="brand" aria-label="Settings" onClick={() => setPopup({ type: "settings" })} className="ml-2 size-14 rounded-full px-0">
-              {Icons.gear}
-            </Chunky>
+                    {DockIcons[b.id]}
+                  </DockButton>
+                );
+              })}
+              <DockButton label="Settings" aria-label="Settings" onClick={() => setPopup({ type: "settings" })}>
+                {DockIcons.settings}
+              </DockButton>
+            </nav>
           </footer>
         </div>
       )}
@@ -385,6 +375,64 @@ export default function App() {
     </div>
   );
 }
+
+/** One dock icon: lifts on hover, shows its name as a tooltip, and an optional count badge. */
+function DockButton({
+  label,
+  badge,
+  children,
+  ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string; badge?: number } & Record<`data-${string}`, string>) {
+  return (
+    <button
+      type="button"
+      title={label}
+      {...rest}
+      className="group relative flex size-12 items-center justify-center rounded-xl transition-[transform,background-color] duration-150 hover:-translate-y-1 hover:scale-110 hover:bg-panel-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-ink/40 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none motion-reduce:hover:transform-none"
+    >
+      {children}
+      {badge !== undefined && (
+        <span className="absolute right-1 top-1 flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold leading-[18px] text-white ring-2 ring-panel tabular-nums">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+const dockIcon = (path: React.ReactNode) => (
+  <svg viewBox="0 0 24 24" aria-hidden className="size-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    {path}
+  </svg>
+);
+
+const DockIcons: Record<BoosterId | "settings", React.ReactNode> = {
+  peek: dockIcon(
+    <>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>,
+  ),
+  undo: dockIcon(
+    <>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+    </>,
+  ),
+  magic: dockIcon(
+    <>
+      <path d="m4 20 11-11" />
+      <path d="m14 4 1.2 2.8L18 8l-2.8 1.2L14 12l-1.2-2.8L10 8l2.8-1.2z" />
+      <path d="M19 14v4M17 16h4M6 3v3M4.5 4.5h3" />
+    </>,
+  ),
+  settings: dockIcon(
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    </>,
+  ),
+};
 
 function boosterName(id: BoosterId) {
   return BOOSTERS.find((b) => b.id === id)!.name;
